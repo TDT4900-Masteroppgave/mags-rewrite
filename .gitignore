@@ -1,0 +1,21 @@
+# CMake build directories (generic)
+build/
+build-*/
+bin/
+lib/
+
+# CLion specific build folder (you already mentioned this, but add the wildcard)
+cmake-build-*/
+
+# JetBrains (CLion/IntelliJ)
+.idea/
+*.iws
+*.iml
+
+# Visual Studio Code
+.vscode/
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
