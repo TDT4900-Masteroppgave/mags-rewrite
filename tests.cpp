@@ -152,6 +152,88 @@ TEST(ComputeMinHashes, DiamonGraphCompleteness) {
     EXPECT_EQ(count_signature_matches(0, 3, signatures), mags::cg::H_FUNCS);
 }
 
+TEST(MinHashScore, IdenticalSignature) {
+    constexpr size_t n = 2;
+    const mags::cg::SignatureMatrix sigs(n, std::vector(mags::cg::H_FUNCS, 1));
+
+    const int score = mags::cg::mh_score(0, 1, sigs);
+    EXPECT_EQ(score, mags::cg::H_FUNCS);
+}
+
+TEST(MinHashScore, DisjointSignature) {
+    constexpr size_t n = 2;
+    mags::cg::SignatureMatrix sigs(n, std::vector<int>(mags::cg::H_FUNCS));
+
+    for (int h = 0; h < mags::cg::H_FUNCS; ++h) {
+        sigs.at(0).at(h) = h;
+        sigs.at(1).at(h) = h + 1;
+    }
+
+    const int score = mags::cg::mh_score(0, 1, sigs);
+    EXPECT_EQ(score, 0);
+}
+
+TEST(MinHashScore, PartialOverlap) {
+    constexpr size_t n = 2;
+    mags::cg::SignatureMatrix sigs(n, std::vector<int>(mags::cg::H_FUNCS));
+
+    for (int h = 0; h < mags::cg::H_FUNCS; ++h) {
+        sigs.at(0).at(h) = h;
+        sigs.at(1).at(h) = (h < 20) ? h: 0;
+    }
+
+    const int score = mags::cg::mh_score(0, 1, sigs);
+    EXPECT_EQ(score, 20);
+}
+
+TEST(MinHashScore, Symmetry) {
+    constexpr size_t n = 2;
+    mags::cg::SignatureMatrix sigs(n, std::vector<int>(mags::cg::H_FUNCS));
+
+    std::mt19937 rng(mags::cg::SEED);
+
+    for (int h = 0; h < mags::cg::H_FUNCS; ++h) {
+        sigs.at(0).at(h) = static_cast<int>(rng() % 20);
+        sigs.at(1).at(h) = static_cast<int>(rng() % 15);
+    }
+
+    EXPECT_EQ(mags::cg::mh_score(0, 1, sigs), mags::cg::mh_score(1, 0, sigs));
+}
+
+TEST(MinHashScore, IsolatedNodesMatch) {
+    constexpr size_t n = 2;
+    const mags::cg::SignatureMatrix sigs(n, std::vector(mags::cg::H_FUNCS, -1));
+
+    const int score = mags::cg::mh_score(0, 1, sigs);
+    EXPECT_EQ(score, mags::cg::H_FUNCS);
+}
+
+TEST(MinHashScore, SelfSimilarity) {
+    constexpr size_t n = 1;
+    mags::cg::SignatureMatrix sigs(n, std::vector<int>(mags::cg::H_FUNCS));
+
+    std::mt19937 rng(mags::cg::SEED);
+    for (int h = 0; h < mags::cg::H_FUNCS; ++h) {
+        sigs.at(0).at(h) = static_cast<int>(rng() % 20);
+    }
+
+    const int score = mags::cg::mh_score(0, 0, sigs);
+    EXPECT_EQ(score, mags::cg::H_FUNCS);
+}
+
+TEST(MinHashScore, VisitedVsUnvisited) {
+    constexpr size_t n = 2;
+    mags::cg::SignatureMatrix sigs(n, std::vector<int>(mags::cg::H_FUNCS));
+
+    for (int h = 0; h < mags::cg::H_FUNCS; ++h) {
+        sigs.at(0).at(h) = h;
+        sigs.at(1).at(h) = -1;
+    }
+
+    const int score = mags::cg::mh_score(0, 1, sigs);
+    EXPECT_EQ(score, 0);
+}
+
 bool contains_pair(const mags::cg::CandidatePairSet& cs, int u, int v) {
     // Normalizing a pair to u < v to match Algorithm 3 requirements
     const std::pair<mags::NodeID, mags::NodeID> target = (u < v) ?
@@ -229,7 +311,7 @@ TEST(CandidateGeneration, MinHashSignaturesWithinVertexRange) {
     mags::cg::compute_minhashes(graph, signatures);
 
     for (const auto& node_sig : signatures) {
-        for (int rank : node_sig) {
+        for (const int rank : node_sig) {
             // Rank must be -1 (isolated) or within [0, n-1]
             EXPECT_TRUE(rank == -1 || (rank >= 0 && rank < 4));
         }
