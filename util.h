@@ -1,0 +1,11 @@
+//
+// Created by Home on 15/01/2026.
+//
+
+#ifndef MAGS_REWRITE_UTIL_H
+#define MAGS_REWRITE_UTIL_H
+#include "types.h"
+
+void sort_neighbors(mags::Graph& graph);
+
+#endif //MAGS_REWRITE_UTIL_H
