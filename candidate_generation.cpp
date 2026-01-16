@@ -45,7 +45,7 @@ namespace mags::cg {
         return matches;
     }
 
-    CandidatePairSet generate_candidates(Graph& graph, const int k) {
+    CandidatePairSet generate_candidates(const Graph& graph, const int k) {
         const size_t n = graph.size();
         SignatureMatrix signatures(n, std::vector<int>(H_FUNCS));
 
@@ -60,7 +60,7 @@ namespace mags::cg {
         for (NodeID u = 0; u < static_cast<int>(n); ++u) {
             if (graph.at(u).empty()) continue;
 
-            std::vector<NodeID>& neighbors = graph.at(u);
+            const std::vector<NodeID>& neighbors = graph.at(u);
             std::unordered_set<NodeID> two_hop_set;
 
             // Line 5: Determine subset S size (sample b nodes)

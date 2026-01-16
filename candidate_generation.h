@@ -14,7 +14,7 @@ namespace mags::cg {
 
     void compute_minhashes(const Graph& graph, SignatureMatrix& signatures);
     int mh_score(NodeID u, NodeID v, const SignatureMatrix& signatures);
-    CandidatePairSet generate_candidates(Graph& graph, int k);
+    CandidatePairSet generate_candidates(const Graph& graph, int k);
 }
 
 #endif //MAGS_REWRITE_CANDIDATE_GENERATION_H

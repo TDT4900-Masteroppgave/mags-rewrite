@@ -6,6 +6,9 @@
 #define MAGS_REWRITE_UTIL_H
 #include "types.h"
 
-void sort_neighbors(mags::Graph& graph);
+namespace mags::util {
+    void sort_neighbors(mags::Graph& graph);
+}
+
 
 #endif //MAGS_REWRITE_UTIL_H

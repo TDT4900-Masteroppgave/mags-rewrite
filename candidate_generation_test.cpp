@@ -2,7 +2,80 @@
 #include <algorithm>
 #include "candidate_generation.h"
 
+#include "util.h"
+
 namespace {
+    class CandidateGenerationTest : public ::testing::Test {
+    protected:
+        mags::Graph diamond_graph;
+        mags::Graph triangle_graph;
+        mags::Graph star_graph;
+        mags::Graph path_graph;
+        mags::Graph ladder_graph;
+        mags::Graph isolated_graph;
+
+        void SetUp() override {
+            mags::cg::SEED = 2333;
+
+            diamond_graph = {
+                {1, 2}, {0, 3}, {0, 3}, {1, 2}
+            };
+
+            triangle_graph = {
+                {1, 2}, {0, 2}, {0, 1}
+            };
+
+            star_graph.assign(11, {});
+            for (int i = 1; i <= 10; ++i) {
+                star_graph.at(0).push_back(i);
+                star_graph.at(i).push_back(0);
+            }
+
+            path_graph = {
+                {1}, {0, 2}, {1, 3}, {2}
+            };
+
+            ladder_graph = create_ladder_graph();
+
+            isolated_graph = {
+                {1},
+                {0},
+                {},
+                {},
+                {}
+
+            };
+
+            prepare_graph(diamond_graph);
+            prepare_graph(triangle_graph);
+            prepare_graph(star_graph);
+            prepare_graph(path_graph);
+            prepare_graph(ladder_graph);
+            prepare_graph(isolated_graph);
+        }
+
+        static mags::Graph create_ladder_graph() {
+            mags::Graph g;
+            g.assign(15, {});
+
+            g.at(0) = {10, 11, 12, 14, 14};
+            for (const int nbr : g.at(0)) g.at(nbr).push_back(0);
+
+            for (int i = 1; i <= 5; ++i) {
+                for (int j = 0; j < i; ++j) {
+                    constexpr int shared_nbr = 10;
+                    g.at(i).push_back(shared_nbr);
+                    g.at(shared_nbr).push_back(i);
+                }
+            }
+            return g;
+        }
+
+        static void prepare_graph(mags::Graph& g) {
+            mags::util::sort_neighbors(g);
+        }
+    };
+
     int count_signature_matches(const int u, const int v, const mags::cg::SignatureMatrix& sigs) {
         int matches = 0;
         for (int h = 0; h < mags::cg::H_FUNCS; ++h) {
@@ -19,100 +92,95 @@ namespace {
     }
 }
 
-class CandidateGenerationTest : public ::testing::Test {
-protected:
-    void SetUp() override {
-        mags::cg::SEED = 2333;
-    }
-};
+
 
 
 TEST_F(CandidateGenerationTest, IdenticalNeighbors) {
-    // Graph with 6 nodes, node 0 and 1 has the same neighbors, and nodes 3 and 4 have the same neighbors
-    const mags::Graph graph = {
+    // g with 6 nodes, node 0 and 1 has the same neighbors, and nodes 3 and 4 have the same neighbors
+    mags::Graph g = {
         {2, 3},
         {2, 3},
         {0, 1},
         {0, 1}
     };
 
-    const size_t n = graph.size();
-    mags::cg::SignatureMatrix signatures(n, std::vector<int>(mags::cg::H_FUNCS));
-    mags::cg::compute_minhashes(graph, signatures);
+    prepare_graph(g);
+
+    const size_t n = g.size();
+    mags::cg::SignatureMatrix sigs(n, std::vector<int>(mags::cg::H_FUNCS));
+    mags::cg::compute_minhashes(g, sigs);
 
     for (int h = 0; h < mags::cg::H_FUNCS; ++h) {
-        EXPECT_EQ(signatures.at(0).at(h), signatures.at(1).at(h));
-        EXPECT_EQ(signatures.at(2).at(h), signatures.at(3).at(h));
+        EXPECT_EQ(sigs.at(0).at(h), sigs.at(1).at(h));
+        EXPECT_EQ(sigs.at(2).at(h), sigs.at(3).at(h));
     }
 }
 
 TEST_F(CandidateGenerationTest, DisjointNeighbors) {
-    // Graph with 6 nodes, node 0 and 1 has the same neighbors, and nodes 3 and 4 have the same neighbors
-    const mags::Graph graph = {
+    // g with 6 nodes, node 0 and 1 has the same neighbors, and nodes 3 and 4 have the same neighbors
+    const mags::Graph g = {
         {2, 3},
         {2, 3},
         {0, 1},
         {0, 1},
         {4}
     };
-    const size_t n = graph.size();
+    const size_t n = g.size();
 
-    mags::cg::SignatureMatrix signatures(n, std::vector<int>(mags::cg::H_FUNCS));
-    mags::cg::compute_minhashes(graph, signatures);
+    mags::cg::SignatureMatrix sigs(n, std::vector<int>(mags::cg::H_FUNCS));
+    mags::cg::compute_minhashes(g, sigs);
 
-    EXPECT_EQ(count_signature_matches(0, 1, signatures), mags::cg::H_FUNCS);
-    EXPECT_EQ(count_signature_matches(0, 4, signatures), 0);
+    EXPECT_EQ(count_signature_matches(1, 0, sigs), mags::cg::H_FUNCS);
+    EXPECT_EQ(count_signature_matches(0, 4, sigs), 0);
 }
 
 TEST_F(CandidateGenerationTest, IsolatedNode) {
-    // Graph with 6 nodes, node 2 is an isolated node and should remain unvisited (-1)
-    const mags::Graph graph = {
-        {0, 1},
-        {0, 1},
-        {}
-    };
-    const size_t n = graph.size();
+    // Node 2, 3, 4 is an isolated node and should remain unvisited (-1)
+    const auto g = isolated_graph;
+    const size_t n = g.size();
 
-    mags::cg::SignatureMatrix signatures(n, std::vector<int>(mags::cg::H_FUNCS));
-    mags::cg::compute_minhashes(graph, signatures);
+    mags::cg::SignatureMatrix sigs(n, std::vector<int>(mags::cg::H_FUNCS));
+    mags::cg::compute_minhashes(g, sigs);
 
     for (int h = 0; h < mags::cg::H_FUNCS; ++h) {
-        EXPECT_EQ(signatures.at(2).at(h), -1);
+        EXPECT_EQ(sigs.at(2).at(h), -1);
+        EXPECT_EQ(sigs.at(3).at(h), -1);
+        EXPECT_EQ(sigs.at(4).at(h), -1);
     }
 }
 
-TEST_F(CandidateGenerationTest,SmallestGraph) {
-    const mags::Graph graph = {
+TEST_F(CandidateGenerationTest, SmallestGraph) {
+    const mags::Graph g = {
         {0}
     };
-    const size_t n = graph.size();
+    const size_t n = g.size();
 
-    mags::cg::SignatureMatrix signatures(n, std::vector<int>(mags::cg::H_FUNCS));
-    mags::cg::compute_minhashes(graph, signatures);
+    mags::cg::SignatureMatrix sigs(n, std::vector<int>(mags::cg::H_FUNCS));
+    mags::cg::compute_minhashes(g, sigs);
 
     for (int h = 0; h < mags::cg::H_FUNCS; ++h) {
-        EXPECT_EQ(signatures.at(0).at(h), 0);
+        EXPECT_EQ(sigs.at(0).at(h), 0);
     }
 }
 
 TEST_F(CandidateGenerationTest, SeedConsistency) {
-    const mags::Graph graph = {
+    const mags::Graph g = {
         {1, 2},
         {0, 1},
         {1}
     };
-    const size_t n = graph.size();
+    const size_t n = g.size();
 
     mags::cg::SignatureMatrix sig_seed_0_run_a(n, std::vector<int>(mags::cg::H_FUNCS));
     mags::cg::SignatureMatrix sig_seed_0_run_b(n, std::vector<int>(mags::cg::H_FUNCS));
     mags::cg::SignatureMatrix sig_seed_1(n, std::vector<int>(mags::cg::H_FUNCS));
 
     mags::cg::SEED = 0;
-    mags::cg::compute_minhashes(graph, sig_seed_0_run_a);
-    mags::cg::compute_minhashes(graph, sig_seed_0_run_b);
+    mags::cg::compute_minhashes(g, sig_seed_0_run_a);
+    mags::cg::compute_minhashes(g, sig_seed_0_run_b);
 
     mags::cg::SEED = 1;
-    mags::cg::compute_minhashes(graph, sig_seed_1);
+    mags::cg::compute_minhashes(g, sig_seed_1);
 
     EXPECT_EQ(sig_seed_0_run_a, sig_seed_0_run_b);
     EXPECT_NE(sig_seed_0_run_a, sig_seed_1);
@@ -144,18 +212,11 @@ TEST_F(CandidateGenerationTest, SelfLoopChangesSimilarity) {
 }
 
 TEST_F(CandidateGenerationTest, DiamonGraphCompleteness) {
-    const mags::Graph graph = {
-        {1, 2},
-        {0, 3},
-        {0, 3},
-        {1, 2}
-    };
-    const size_t n = graph.size();
+    const auto g = diamond_graph;
+    mags::cg::SignatureMatrix sigs(g.size(), std::vector<int>(mags::cg::H_FUNCS));
+    mags::cg::compute_minhashes(g, sigs);
 
-    mags::cg::SignatureMatrix signatures(n, std::vector<int>(mags::cg::H_FUNCS));
-    mags::cg::compute_minhashes(graph, signatures);
-
-    EXPECT_EQ(count_signature_matches(0, 3, signatures), mags::cg::H_FUNCS);
+    EXPECT_EQ(count_signature_matches(0, 3, sigs), mags::cg::H_FUNCS);
 }
 
 TEST_F(CandidateGenerationTest, IdenticalSignature) {
@@ -241,94 +302,78 @@ TEST_F(CandidateGenerationTest,VisitedVsUnvisited) {
 }
 
 TEST_F(CandidateGenerationTest, DiamondGraphCompleteness) {
-    mags::Graph graph(4);
-    graph[0] = {1, 2}; graph[1] = {0, 3}; graph[2] = {0, 3}; graph[3] = {1, 2};
+    const auto g = diamond_graph;
 
-    // Using k=30 ensures we keep all candidates for this small graph
-    const auto candidates = mags::cg::generate_candidates(graph, 30);
+    const auto candidates = mags::cg::generate_candidates(g, 30);
 
-    // Total unique pairs in 4 nodes = 6
-    // Mags identifies these through 1-hop and 2-hop neighbor sampling
-    EXPECT_EQ(candidates.size(), 6);
-    EXPECT_TRUE(contains_pair(candidates, 0, 3));
+    EXPECT_EQ(candidates.size(), g.size()*(g.size()-1)/2);
+    EXPECT_TRUE(contains_pair(candidates, 3, 0));
     EXPECT_TRUE(contains_pair(candidates, 1, 2));
 }
 
-TEST_F(CandidateGenerationTest,NoInvalidPairs) {
-    mags::Graph graph(3);
-    graph[0] = {1}; graph[1] = {0, 2}; graph[2] = {1};
+TEST_F(CandidateGenerationTest, NoInvalidPairs) {
+    const auto g = path_graph;
 
-    const auto candidates = mags::cg::generate_candidates(graph, 10);
-
-    for (const auto& [fst, snd] : candidates) {
+    for (const auto candidates = mags::cg::generate_candidates(g, 10);
+        const auto& [u, v] : candidates) {
         // Enforce u < v normalization
-        EXPECT_LT(fst, snd);
-        EXPECT_GE(fst, 0);
-        EXPECT_LT(snd, 3);
+        EXPECT_TRUE(u < v);
+        EXPECT_GE(u, 0);
+        EXPECT_LT(v, g.size());
     }
 }
 
 TEST_F(CandidateGenerationTest, TriangleNoDuplicates) {
-    mags::Graph graph(3);
-    graph[0] = {1, 2}; graph[1] = {0, 2}; graph[2] = {0, 1};
+    const auto g = triangle_graph;
 
-    const auto candidates = mags::cg::generate_candidates(graph, 10);
+    const auto candidates = mags::cg::generate_candidates(g, 10);
 
     // std::set deduplication ensures (u,v) is not added twice despite multiple paths
-    EXPECT_EQ(candidates.size(), 3);
+    EXPECT_EQ(candidates.size(), g.size() * (g.size() - 1)  / 2);
 }
 
 TEST_F(CandidateGenerationTest, IsolatedNodeSize) {
-    mags::Graph graph(5);
-    graph[0] = {1}; graph[1] = {0};
-    // Nodes 2, 3, 4 are isolated
+    const auto g = isolated_graph;
 
-    const auto candidates = mags::cg::generate_candidates(graph, 10);
+    const auto candidates = mags::cg::generate_candidates(g, 10);
 
     // Mags skips empty neighbors during sampling
     EXPECT_EQ(candidates.size(), 1); // Only (0, 1) should exist
 }
 
 TEST_F(CandidateGenerationTest, SeedingIsDeterministic) {
-    mags::Graph graph(4);
-    graph[0] = {1, 2}; graph[1] = {0, 3}; graph[2] = {0, 3}; graph[3] = {1, 2};
+    const auto g = path_graph;
 
-    const auto run1 = mags::cg::generate_candidates(graph, 10);
-    const auto run2 = mags::cg::generate_candidates(graph, 10);
+    const auto run1 = mags::cg::generate_candidates(g, 10);
+    const auto run2 = mags::cg::generate_candidates(g, 10);
 
     EXPECT_EQ(run1.size(), run2.size());
     EXPECT_EQ(run1, run2);
 }
 
 TEST_F(CandidateGenerationTest, MinHashSignaturesWithinVertexRange) {
-    mags::Graph graph(4);
-    graph[0] = {1}; graph[1] = {0, 2}; graph[2] = {1, 3}; graph[3] = {2};
+    const auto g = path_graph;
 
-    mags::cg::SignatureMatrix signatures(graph.size(), std::vector<int>(mags::cg::H_FUNCS));
-    mags::cg::compute_minhashes(graph, signatures);
+    mags::cg::SignatureMatrix sigs(g.size(), std::vector<int>(mags::cg::H_FUNCS));
+    mags::cg::compute_minhashes(g, sigs);
 
-    for (const auto& node_sig : signatures) {
+    for (const auto& node_sig : sigs) {
         for (const int rank : node_sig) {
-            // Rank must be -1 (isolated) or within [0, n-1]
-            EXPECT_TRUE(rank == -1 || (rank >= 0 && rank < 4));
+            // Rank is either -1 (no neighbor was the 'min' for this hash)
+            // or a valid index in the graph vector [0, n-1]
+            EXPECT_TRUE(rank >= -1 && rank < g.size());
         }
     }
 }
 
 TEST_F(CandidateGenerationTest, KLimitPerNode) {
-    mags::Graph graph(100);
-
-    // Star graph, center node 0 has 99 neighbors
-    for (int i = 0; i < graph.size(); ++i) {
-        graph.at(0).push_back(i);
-        graph.at(i).push_back(0);
-    }
+    const auto g = star_graph;
 
     constexpr int k = 10;
-    const auto candidates = mags::cg::generate_candidates(graph, k);
+    const auto candidates = mags::cg::generate_candidates(g, k);
 
-    // Should max generate n*k candidate pairs
-    EXPECT_LE(candidates.size(), graph.size() * k);
+    // Generate max n * k candidate pairs
+    EXPECT_LE(candidates.size(), g.size() * k);
 
     // Count how many pairs involve node 1
     int node_1_candidates = 0;
@@ -340,55 +385,31 @@ TEST_F(CandidateGenerationTest, KLimitPerNode) {
 }
 
 TEST_F(CandidateGenerationTest, VerifyUndirectionalFilter) {
-    mags::Graph graph = {
-        {1, 2},
-        {0, 2},
-        {0, 1}
-    };
+    const auto g = triangle_graph;
 
-    for (const auto candidates = mags::cg::generate_candidates(graph, 10);
+    for (const auto candidates = mags::cg::generate_candidates(g, 10);
         const auto& [u, v] : candidates) {
         EXPECT_TRUE(u < v);
     }
 }
 
 TEST_F(CandidateGenerationTest, NoSelfPairs) {
-    mags::Graph graph = {
+    const mags::Graph g = {
         {0, 1},
         {0, 1}
     };
 
-    for (const auto candidates = mags::cg::generate_candidates(graph, 10);
+    for (const auto candidates = mags::cg::generate_candidates(g, 10);
         const auto& [u, v] : candidates) {
         EXPECT_NE(u, v);
     }
 }
 
 TEST_F(CandidateGenerationTest, TopKEviction) {
-    mags::Graph graph(20);
-    graph.at(0) = {10, 11, 12, 13, 14};
-    for (const int nbr : graph.at(0)) graph.at(nbr).push_back(0);
-
-    // Candidate 1: shares 1 neighbor with node 0 (Low similarity)
-    graph[1] = {10}; graph[10].push_back(1);
-
-    // Candidate 2: shares 2 neighbors with node 0
-    graph[2] = {10, 11}; graph[10].push_back(2); graph[11].push_back(2);
-
-    // Candidate 3: shares 3 neighbors with node 0
-    graph[3] = {10, 11, 12}; graph[10].push_back(3); graph[11].push_back(3); graph[12].push_back(3);
-
-    // Candidate 4: shares 4 neighbors with node 0
-    graph[4] = {10, 11, 12, 13};
-    graph[10].push_back(4); graph[11].push_back(4);
-    graph[12].push_back(4); graph[13].push_back(4);
-
-    // Candidate 5: shares all 5 neighbors (Highest similarity)
-    graph[5] = {10, 11, 12, 13, 14};
-    for (const int nbr : graph[0]) graph[nbr].push_back(5);
+    const auto g = ladder_graph;
 
     constexpr int k = 1;
-    const auto candidates = mags::cg::generate_candidates(graph, k);
+    const auto candidates = mags::cg::generate_candidates(g, k);
 
     EXPECT_FALSE(candidates.empty());
 
