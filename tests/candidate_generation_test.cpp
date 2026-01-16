@@ -108,7 +108,7 @@ TEST_F(CandidateGenerationTest, IdenticalNeighbors) {
 
     const size_t n = g.size();
     mags::cg::SignatureMatrix sigs(n, std::vector<int>(mags::cg::H_FUNCS));
-    mags::cg::compute_minhashes(g, sigs);
+    mags::cg::detail::compute_minhashes(g, sigs);
 
     for (int h = 0; h < mags::cg::H_FUNCS; ++h) {
         EXPECT_EQ(sigs.at(0).at(h), sigs.at(1).at(h));
@@ -128,7 +128,7 @@ TEST_F(CandidateGenerationTest, DisjointNeighbors) {
     const size_t n = g.size();
 
     mags::cg::SignatureMatrix sigs(n, std::vector<int>(mags::cg::H_FUNCS));
-    mags::cg::compute_minhashes(g, sigs);
+    mags::cg::detail::compute_minhashes(g, sigs);
 
     EXPECT_EQ(count_signature_matches(1, 0, sigs), mags::cg::H_FUNCS);
     EXPECT_EQ(count_signature_matches(0, 4, sigs), 0);
@@ -140,7 +140,7 @@ TEST_F(CandidateGenerationTest, IsolatedNode) {
     const size_t n = g.size();
 
     mags::cg::SignatureMatrix sigs(n, std::vector<int>(mags::cg::H_FUNCS));
-    mags::cg::compute_minhashes(g, sigs);
+    mags::cg::detail::compute_minhashes(g, sigs);
 
     for (int h = 0; h < mags::cg::H_FUNCS; ++h) {
         EXPECT_EQ(sigs.at(2).at(h), -1);
@@ -156,7 +156,7 @@ TEST_F(CandidateGenerationTest, SmallestGraph) {
     const size_t n = g.size();
 
     mags::cg::SignatureMatrix sigs(n, std::vector<int>(mags::cg::H_FUNCS));
-    mags::cg::compute_minhashes(g, sigs);
+    mags::cg::detail::compute_minhashes(g, sigs);
 
     for (int h = 0; h < mags::cg::H_FUNCS; ++h) {
         EXPECT_EQ(sigs.at(0).at(h), 0);
@@ -176,11 +176,11 @@ TEST_F(CandidateGenerationTest, SeedConsistency) {
     mags::cg::SignatureMatrix sig_seed_1(n, std::vector<int>(mags::cg::H_FUNCS));
 
     mags::cg::SEED = 0;
-    mags::cg::compute_minhashes(g, sig_seed_0_run_a);
-    mags::cg::compute_minhashes(g, sig_seed_0_run_b);
+    mags::cg::detail::compute_minhashes(g, sig_seed_0_run_a);
+    mags::cg::detail::compute_minhashes(g, sig_seed_0_run_b);
 
     mags::cg::SEED = 1;
-    mags::cg::compute_minhashes(g, sig_seed_1);
+    mags::cg::detail::compute_minhashes(g, sig_seed_1);
 
     EXPECT_EQ(sig_seed_0_run_a, sig_seed_0_run_b);
     EXPECT_NE(sig_seed_0_run_a, sig_seed_1);
@@ -204,8 +204,8 @@ TEST_F(CandidateGenerationTest, SelfLoopChangesSimilarity) {
     mags::cg::SignatureMatrix sig1(n1, std::vector<int>(mags::cg::H_FUNCS));
     mags::cg::SignatureMatrix sig2(n2, std::vector<int>(mags::cg::H_FUNCS));
 
-    mags::cg::compute_minhashes(g_no_self_loop, sig1);
-    mags::cg::compute_minhashes(g_with_self_loop, sig2);
+    mags::cg::detail::compute_minhashes(g_no_self_loop, sig1);
+    mags::cg::detail::compute_minhashes(g_with_self_loop, sig2);
 
     EXPECT_NE(sig1.at(1), sig2.at(1));
     EXPECT_NE(count_signature_matches(0, 1, sig1), count_signature_matches(0, 1, sig2));
@@ -214,7 +214,7 @@ TEST_F(CandidateGenerationTest, SelfLoopChangesSimilarity) {
 TEST_F(CandidateGenerationTest, DiamonGraphCompleteness) {
     const auto g = diamond_graph;
     mags::cg::SignatureMatrix sigs(g.size(), std::vector<int>(mags::cg::H_FUNCS));
-    mags::cg::compute_minhashes(g, sigs);
+    mags::cg::detail::compute_minhashes(g, sigs);
 
     EXPECT_EQ(count_signature_matches(0, 3, sigs), mags::cg::H_FUNCS);
 }
@@ -223,7 +223,7 @@ TEST_F(CandidateGenerationTest, IdenticalSignature) {
     constexpr size_t n = 2;
     const mags::cg::SignatureMatrix sigs(n, std::vector(mags::cg::H_FUNCS, 1));
 
-    const int score = mags::cg::mh_score(0, 1, sigs);
+    const int score = mags::cg::detail::mh_score(0, 1, sigs);
     EXPECT_EQ(score, mags::cg::H_FUNCS);
 }
 
@@ -236,7 +236,7 @@ TEST_F(CandidateGenerationTest, DisjointSignature) {
         sigs.at(1).at(h) = h + 1;
     }
 
-    const int score = mags::cg::mh_score(0, 1, sigs);
+    const int score = mags::cg::detail::mh_score(0, 1, sigs);
     EXPECT_EQ(score, 0);
 }
 
@@ -249,7 +249,7 @@ TEST_F(CandidateGenerationTest, PartialOverlap) {
         sigs.at(1).at(h) = (h < 20) ? h: 0;
     }
 
-    const int score = mags::cg::mh_score(0, 1, sigs);
+    const int score = mags::cg::detail::mh_score(0, 1, sigs);
     EXPECT_EQ(score, 20);
 }
 
@@ -264,14 +264,14 @@ TEST_F(CandidateGenerationTest, Symmetry) {
         sigs.at(1).at(h) = static_cast<int>(rng() % 15);
     }
 
-    EXPECT_EQ(mags::cg::mh_score(0, 1, sigs), mags::cg::mh_score(1, 0, sigs));
+    EXPECT_EQ(mags::cg::detail::mh_score(0, 1, sigs), mags::cg::detail::mh_score(1, 0, sigs));
 }
 
 TEST_F(CandidateGenerationTest, IsolatedNodesMatch) {
     constexpr size_t n = 2;
     const mags::cg::SignatureMatrix sigs(n, std::vector(mags::cg::H_FUNCS, -1));
 
-    const int score = mags::cg::mh_score(0, 1, sigs);
+    const int score = mags::cg::detail::mh_score(0, 1, sigs);
     EXPECT_EQ(score, mags::cg::H_FUNCS);
 }
 
@@ -284,7 +284,7 @@ TEST_F(CandidateGenerationTest, SelfSimilarity) {
         sigs.at(0).at(h) = static_cast<int>(rng() % 20);
     }
 
-    const int score = mags::cg::mh_score(0, 0, sigs);
+    const int score = mags::cg::detail::mh_score(0, 0, sigs);
     EXPECT_EQ(score, mags::cg::H_FUNCS);
 }
 
@@ -297,8 +297,44 @@ TEST_F(CandidateGenerationTest,VisitedVsUnvisited) {
         sigs.at(1).at(h) = -1;
     }
 
-    const int score = mags::cg::mh_score(0, 1, sigs);
+    const int score = mags::cg::detail::mh_score(0, 1, sigs);
     EXPECT_EQ(score, 0);
+}
+
+TEST_F(CandidateGenerationTest, TwoHopSamplingLimit) {
+    const auto g = star_graph; // Node 0 is connected to 10 nodes
+    std::unordered_set<mags::NodeID> neighbors;
+
+    // Sample only 2 neighbors of Node 0
+    mags::cg::detail::get_two_hop_neighbors(g, 0, 2, neighbors);
+
+    // Should contain all 10 immediate neighbors (1-hop is always included),
+    // but the 2-hop logic should have only triggered for 2 of those neighbors.
+    EXPECT_GE(neighbors.size(), 10);
+}
+
+TEST_F(CandidateGenerationTest, TopKPriorityEviction) {
+    constexpr mags::NodeID u = 0;
+    constexpr int k = 2;
+    std::unordered_set<mags::NodeID> neighbors = {1, 2, 3};
+
+    // Create a dummy signature matrix where 1 and 2 are better than 3
+    mags::cg::SignatureMatrix sigs(4, std::vector<int>(mags::cg::H_FUNCS, 0));
+    // Node 1: Perfect match
+    std::ranges::fill(sigs.at(1), 0);
+    // Node 2: Half match
+    for(int i=0; i < mags::cg::H_FUNCS/2; ++i) sigs.at(2).at(i) = 1;
+    // Node 3: No match
+    std::ranges::fill(sigs.at(3), 2);
+
+    phmap::btree_set<std::pair<int, mags::NodeID>> top_k;
+    mags::cg::detail::get_top_k_candidate_pairs(u, k, neighbors, sigs, top_k);
+
+    EXPECT_EQ(top_k.size(), k);
+    // Node 3 should have been evicted because its score is 0
+    for (const auto& [score, v] : top_k) {
+        EXPECT_NE(v, 3);
+    }
 }
 
 TEST_F(CandidateGenerationTest, DiamondGraphCompleteness) {
@@ -355,7 +391,7 @@ TEST_F(CandidateGenerationTest, MinHashSignaturesWithinVertexRange) {
     const auto g = path_graph;
 
     mags::cg::SignatureMatrix sigs(g.size(), std::vector<int>(mags::cg::H_FUNCS));
-    mags::cg::compute_minhashes(g, sigs);
+    mags::cg::detail::compute_minhashes(g, sigs);
 
     for (const auto& node_sig : sigs) {
         for (const int rank : node_sig) {

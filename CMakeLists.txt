@@ -29,8 +29,7 @@ FetchContent_Declare(
         GIT_TAG        v2.0.0
 )
 FetchContent_MakeAvailable(parallel_hashmap)
-target_link_libraries(cg_logic PRIVATE phmap)
+target_link_libraries(cg_logic PUBLIC phmap)
 
-# In the root CMakeLists.txt
 target_include_directories(cg_logic PUBLIC include)
 add_subdirectory(tests)
