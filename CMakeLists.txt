@@ -38,5 +38,5 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-add_executable(mags_tests tests.cpp)
+add_executable(mags_tests candidate_generation_test.cpp)
 target_link_libraries(mags_tests PRIVATE cg_logic GTest::gtest_main GTest::gtest)

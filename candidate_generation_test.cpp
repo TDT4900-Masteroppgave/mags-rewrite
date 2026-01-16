@@ -2,13 +2,30 @@
 #include <algorithm>
 #include "candidate_generation.h"
 
-int count_signature_matches(const int u, const int v, const mags::cg::SignatureMatrix& sigs) {
-    int matches = 0;
-    for (int h = 0; h < mags::cg::H_FUNCS; ++h) {
-        if (sigs.at(u).at(h) == sigs.at(v).at(h)) matches++;
+namespace {
+    int count_signature_matches(const int u, const int v, const mags::cg::SignatureMatrix& sigs) {
+        int matches = 0;
+        for (int h = 0; h < mags::cg::H_FUNCS; ++h) {
+            if (sigs.at(u).at(h) == sigs.at(v).at(h)) matches++;
+        }
+        return matches;
     }
-    return matches;
+
+    bool contains_pair(const mags::cg::CandidatePairSet& cp, int u, int v) {
+        const std::pair<mags::NodeID, mags::NodeID> target = (u < v) ?
+        std::make_pair(u, v) : std::make_pair(v, u);
+
+        return cp.contains(target);
+    }
 }
+
+class CandidateGenerationTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        mags::cg::SEED = 2333;
+    }
+};
+
 
 TEST(ComputeMinHashes, IdenticalNeighbors) {
     // Graph with 6 nodes, node 0 and 1 has the same neighbors, and nodes 3 and 4 have the same neighbors
@@ -234,14 +251,6 @@ TEST(MinHashScore, VisitedVsUnvisited) {
     EXPECT_EQ(score, 0);
 }
 
-bool contains_pair(const mags::cg::CandidatePairSet& cs, int u, int v) {
-    // Normalizing a pair to u < v to match Algorithm 3 requirements
-    const std::pair<mags::NodeID, mags::NodeID> target = (u < v) ?
-    std::make_pair(u, v) : std::make_pair(v, u);
-
-    return cs.contains(target);
-}
-
 TEST(CandidateGeneration, DiamondGraphCompleteness) {
     mags::Graph graph(4);
     graph[0] = {1, 2}; graph[1] = {0, 3}; graph[2] = {0, 3}; graph[3] = {1, 2};
@@ -316,4 +325,88 @@ TEST(CandidateGeneration, MinHashSignaturesWithinVertexRange) {
             EXPECT_TRUE(rank == -1 || (rank >= 0 && rank < 4));
         }
     }
+}
+
+TEST_F(CandidateGenerationTest, KLimitPerNode) {
+    mags::Graph graph(100);
+
+    // Star graph, center node 0 has 99 neighbors
+    for (int i = 0; i < graph.size(); ++i) {
+        graph.at(0).push_back(i);
+        graph.at(i).push_back(0);
+    }
+
+    constexpr int k = 10;
+    const auto candidates = mags::cg::generate_candidates(graph, k);
+
+    // Should max generate n*k candidate pairs
+    EXPECT_LE(candidates.size(), graph.size() * k);
+
+    // Count how many pairs involve node 1
+    int node_1_candidates = 0;
+    for (const auto& [u, v] : candidates) {
+        if (u == 1 || v == 1) node_1_candidates++;
+    }
+
+    EXPECT_LE(node_1_candidates, k);
+}
+
+TEST_F(CandidateGenerationTest, VerifyUndirectionalFilter) {
+    mags::Graph graph = {
+        {1, 2},
+        {0, 2},
+        {0, 1}
+    };
+
+    for (const auto candidates = mags::cg::generate_candidates(graph, 10);
+        const auto& [u, v] : candidates) {
+        EXPECT_TRUE(u < v);
+    }
+}
+
+TEST_F(CandidateGenerationTest, NoSelfPairs) {
+    mags::Graph graph = {
+        {0, 1},
+        {0, 1}
+    };
+
+    for (const auto candidates = mags::cg::generate_candidates(graph, 10);
+        const auto& [u, v] : candidates) {
+        EXPECT_NE(u, v);
+    }
+}
+
+TEST_F(CandidateGenerationTest, TopKEviction) {
+    mags::Graph graph(20);
+    graph.at(0) = {10, 11, 12, 13, 14};
+    for (const int nbr : graph.at(0)) graph.at(nbr).push_back(0);
+
+    // Candidate 1: shares 1 neighbor with node 0 (Low similarity)
+    graph[1] = {10}; graph[10].push_back(1);
+
+    // Candidate 2: shares 2 neighbors with node 0
+    graph[2] = {10, 11}; graph[10].push_back(2); graph[11].push_back(2);
+
+    // Candidate 3: shares 3 neighbors with node 0
+    graph[3] = {10, 11, 12}; graph[10].push_back(3); graph[11].push_back(3); graph[12].push_back(3);
+
+    // Candidate 4: shares 4 neighbors with node 0
+    graph[4] = {10, 11, 12, 13};
+    graph[10].push_back(4); graph[11].push_back(4);
+    graph[12].push_back(4); graph[13].push_back(4);
+
+    // Candidate 5: shares all 5 neighbors (Highest similarity)
+    graph[5] = {10, 11, 12, 13, 14};
+    for (const int nbr : graph[0]) graph[nbr].push_back(5);
+
+    constexpr int k = 1;
+    const auto candidates = mags::cg::generate_candidates(graph, k);
+
+    EXPECT_FALSE(candidates.empty());
+
+    bool found_best = false;
+    for (const auto& [u, v] : candidates) {
+        if ((u == 0 && v == 5) || (u == 5 && v == 0)) found_best = true;
+    }
+    EXPECT_TRUE(found_best);
 }
