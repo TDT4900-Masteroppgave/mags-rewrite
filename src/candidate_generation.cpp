@@ -1,4 +1,4 @@
-#include "candidate_generation.h"
+#include "mags/candidate_generation.h"
 #include "parallel_hashmap/btree.h"
 
 #include <vector>
@@ -7,6 +7,8 @@
 #include <unordered_set>
 #include <algorithm>
 
+// TODO: duplicate - understand if (u != v)?, signatures.at(nbr).at(h_idx) = i; - understand
+// TODO: refactoring - function for 2Hop generation, and function for TopK selection
 namespace mags::cg {
 
     // Generates MinHash signatures to estimate Jaccard similarity between node neighborhoods
@@ -15,19 +17,19 @@ namespace mags::cg {
             std::ranges::fill(row, -1);
         }
 
-        std::vector<int> nodes(graph.size());
-        std::iota(nodes.begin(), nodes.end(), 0);
+        std::vector<int> h_func(graph.size());
+        std::iota(h_func.begin(), h_func.end(), 0);
 
         std::mt19937 rng(SEED);
         for (int h_idx = 0; h_idx < H_FUNCS; ++h_idx) {
             // Line 1: Initialize h hash functions
-            std::ranges::shuffle(nodes, rng);
+            std::ranges::shuffle(h_func, rng);
 
             // Line 2: Compute MinHashes
-            for (int i = 0; i < nodes.size(); ++i) {
-                for (const NodeID u = nodes.at(i); const NodeID v : graph.at(u)) {
-                    if (signatures.at(v).at(h_idx) == -1) {
-                        signatures.at(v).at(h_idx) = i;
+            for (int i = 0; i < h_func.size(); ++i) {
+                for (const NodeID u = h_func.at(i); const NodeID nbr : graph.at(u)) {
+                    if (signatures.at(nbr).at(h_idx) == -1) {
+                        signatures.at(nbr).at(h_idx) = i;
                     }
                 }
             }
@@ -71,7 +73,7 @@ namespace mags::cg {
 
             // Line 6 (Part B): 2Hop <- Union of N_w for w in S (include all neighbors of the b sampled nodes in S)
             for (int i = 0; i < num_to_sample; ++i) {
-                for (const NodeID w = neighbors.at(i); const NodeID two_hop : graph.at(w)) {
+                for (const NodeID one_hop = neighbors.at(i); const NodeID two_hop : graph.at(one_hop)) {
                     if (two_hop > u) two_hop_set.insert(two_hop);
                 }
             }
@@ -95,7 +97,6 @@ namespace mags::cg {
             for (const auto&[_, v] : top_k) {
                 if (u != v) CP.insert(u < v ? std::make_pair(u, v) : std::make_pair(v, u));
             }
-
         }
         return CP;
     }

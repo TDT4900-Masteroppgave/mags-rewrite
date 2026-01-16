@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 #include <algorithm>
-#include "candidate_generation.h"
+#include "mags/candidate_generation.h"
 
-#include "util.h"
+#include "mags/util.h"
 
 namespace {
     class CandidateGenerationTest : public ::testing::Test {
