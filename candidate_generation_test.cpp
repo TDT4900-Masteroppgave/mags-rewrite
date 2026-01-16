@@ -27,7 +27,7 @@ protected:
 };
 
 
-TEST(ComputeMinHashes, IdenticalNeighbors) {
+TEST_F(CandidateGenerationTest, IdenticalNeighbors) {
     // Graph with 6 nodes, node 0 and 1 has the same neighbors, and nodes 3 and 4 have the same neighbors
     const mags::Graph graph = {
         {2, 3},
@@ -38,9 +38,6 @@ TEST(ComputeMinHashes, IdenticalNeighbors) {
 
     const size_t n = graph.size();
     mags::cg::SignatureMatrix signatures(n, std::vector<int>(mags::cg::H_FUNCS));
-
-    mags::cg::SEED = 2333;
-
     mags::cg::compute_minhashes(graph, signatures);
 
     for (int h = 0; h < mags::cg::H_FUNCS; ++h) {
@@ -49,7 +46,7 @@ TEST(ComputeMinHashes, IdenticalNeighbors) {
     }
 }
 
-TEST(ComputeMinHashes, DisjointNeighbors) {
+TEST_F(CandidateGenerationTest, DisjointNeighbors) {
     // Graph with 6 nodes, node 0 and 1 has the same neighbors, and nodes 3 and 4 have the same neighbors
     const mags::Graph graph = {
         {2, 3},
@@ -61,15 +58,13 @@ TEST(ComputeMinHashes, DisjointNeighbors) {
     const size_t n = graph.size();
 
     mags::cg::SignatureMatrix signatures(n, std::vector<int>(mags::cg::H_FUNCS));
-
-    mags::cg::SEED = 2333;
     mags::cg::compute_minhashes(graph, signatures);
 
     EXPECT_EQ(count_signature_matches(0, 1, signatures), mags::cg::H_FUNCS);
     EXPECT_EQ(count_signature_matches(0, 4, signatures), 0);
 }
 
-TEST(ComputeMinHashes, IsolatedNode) {
+TEST_F(CandidateGenerationTest, IsolatedNode) {
     // Graph with 6 nodes, node 2 is an isolated node and should remain unvisited (-1)
     const mags::Graph graph = {
         {0, 1},
@@ -79,8 +74,6 @@ TEST(ComputeMinHashes, IsolatedNode) {
     const size_t n = graph.size();
 
     mags::cg::SignatureMatrix signatures(n, std::vector<int>(mags::cg::H_FUNCS));
-
-    mags::cg::SEED = 2333;
     mags::cg::compute_minhashes(graph, signatures);
 
     for (int h = 0; h < mags::cg::H_FUNCS; ++h) {
@@ -88,15 +81,13 @@ TEST(ComputeMinHashes, IsolatedNode) {
     }
 }
 
-TEST(ComputeMinHashes, SmallestGraph) {
+TEST_F(CandidateGenerationTest,SmallestGraph) {
     const mags::Graph graph = {
         {0}
     };
     const size_t n = graph.size();
 
     mags::cg::SignatureMatrix signatures(n, std::vector<int>(mags::cg::H_FUNCS));
-
-    mags::cg::SEED = 2333;
     mags::cg::compute_minhashes(graph, signatures);
 
     for (int h = 0; h < mags::cg::H_FUNCS; ++h) {
@@ -104,7 +95,7 @@ TEST(ComputeMinHashes, SmallestGraph) {
     }
 }
 
-TEST(ComputeMinHashes, SeedConsistency) {
+TEST_F(CandidateGenerationTest, SeedConsistency) {
     const mags::Graph graph = {
         {1, 2},
         {0, 1},
@@ -127,7 +118,7 @@ TEST(ComputeMinHashes, SeedConsistency) {
     EXPECT_NE(sig_seed_0_run_a, sig_seed_1);
 }
 
-TEST(ComputeMinHashes, SelfLoopChangesSimilarity) {
+TEST_F(CandidateGenerationTest, SelfLoopChangesSimilarity) {
     const mags::Graph g_no_self_loop = {
         {2},
         {2},
@@ -145,7 +136,6 @@ TEST(ComputeMinHashes, SelfLoopChangesSimilarity) {
     mags::cg::SignatureMatrix sig1(n1, std::vector<int>(mags::cg::H_FUNCS));
     mags::cg::SignatureMatrix sig2(n2, std::vector<int>(mags::cg::H_FUNCS));
 
-    mags::cg::SEED = 2333;
     mags::cg::compute_minhashes(g_no_self_loop, sig1);
     mags::cg::compute_minhashes(g_with_self_loop, sig2);
 
@@ -153,7 +143,7 @@ TEST(ComputeMinHashes, SelfLoopChangesSimilarity) {
     EXPECT_NE(count_signature_matches(0, 1, sig1), count_signature_matches(0, 1, sig2));
 }
 
-TEST(ComputeMinHashes, DiamonGraphCompleteness) {
+TEST_F(CandidateGenerationTest, DiamonGraphCompleteness) {
     const mags::Graph graph = {
         {1, 2},
         {0, 3},
@@ -163,13 +153,12 @@ TEST(ComputeMinHashes, DiamonGraphCompleteness) {
     const size_t n = graph.size();
 
     mags::cg::SignatureMatrix signatures(n, std::vector<int>(mags::cg::H_FUNCS));
-    mags::cg::SEED = 2333;
     mags::cg::compute_minhashes(graph, signatures);
 
     EXPECT_EQ(count_signature_matches(0, 3, signatures), mags::cg::H_FUNCS);
 }
 
-TEST(MinHashScore, IdenticalSignature) {
+TEST_F(CandidateGenerationTest, IdenticalSignature) {
     constexpr size_t n = 2;
     const mags::cg::SignatureMatrix sigs(n, std::vector(mags::cg::H_FUNCS, 1));
 
@@ -177,7 +166,7 @@ TEST(MinHashScore, IdenticalSignature) {
     EXPECT_EQ(score, mags::cg::H_FUNCS);
 }
 
-TEST(MinHashScore, DisjointSignature) {
+TEST_F(CandidateGenerationTest, DisjointSignature) {
     constexpr size_t n = 2;
     mags::cg::SignatureMatrix sigs(n, std::vector<int>(mags::cg::H_FUNCS));
 
@@ -190,7 +179,7 @@ TEST(MinHashScore, DisjointSignature) {
     EXPECT_EQ(score, 0);
 }
 
-TEST(MinHashScore, PartialOverlap) {
+TEST_F(CandidateGenerationTest, PartialOverlap) {
     constexpr size_t n = 2;
     mags::cg::SignatureMatrix sigs(n, std::vector<int>(mags::cg::H_FUNCS));
 
@@ -203,7 +192,7 @@ TEST(MinHashScore, PartialOverlap) {
     EXPECT_EQ(score, 20);
 }
 
-TEST(MinHashScore, Symmetry) {
+TEST_F(CandidateGenerationTest, Symmetry) {
     constexpr size_t n = 2;
     mags::cg::SignatureMatrix sigs(n, std::vector<int>(mags::cg::H_FUNCS));
 
@@ -217,7 +206,7 @@ TEST(MinHashScore, Symmetry) {
     EXPECT_EQ(mags::cg::mh_score(0, 1, sigs), mags::cg::mh_score(1, 0, sigs));
 }
 
-TEST(MinHashScore, IsolatedNodesMatch) {
+TEST_F(CandidateGenerationTest, IsolatedNodesMatch) {
     constexpr size_t n = 2;
     const mags::cg::SignatureMatrix sigs(n, std::vector(mags::cg::H_FUNCS, -1));
 
@@ -225,7 +214,7 @@ TEST(MinHashScore, IsolatedNodesMatch) {
     EXPECT_EQ(score, mags::cg::H_FUNCS);
 }
 
-TEST(MinHashScore, SelfSimilarity) {
+TEST_F(CandidateGenerationTest, SelfSimilarity) {
     constexpr size_t n = 1;
     mags::cg::SignatureMatrix sigs(n, std::vector<int>(mags::cg::H_FUNCS));
 
@@ -238,7 +227,7 @@ TEST(MinHashScore, SelfSimilarity) {
     EXPECT_EQ(score, mags::cg::H_FUNCS);
 }
 
-TEST(MinHashScore, VisitedVsUnvisited) {
+TEST_F(CandidateGenerationTest,VisitedVsUnvisited) {
     constexpr size_t n = 2;
     mags::cg::SignatureMatrix sigs(n, std::vector<int>(mags::cg::H_FUNCS));
 
@@ -251,7 +240,7 @@ TEST(MinHashScore, VisitedVsUnvisited) {
     EXPECT_EQ(score, 0);
 }
 
-TEST(CandidateGeneration, DiamondGraphCompleteness) {
+TEST_F(CandidateGenerationTest, DiamondGraphCompleteness) {
     mags::Graph graph(4);
     graph[0] = {1, 2}; graph[1] = {0, 3}; graph[2] = {0, 3}; graph[3] = {1, 2};
 
@@ -265,7 +254,7 @@ TEST(CandidateGeneration, DiamondGraphCompleteness) {
     EXPECT_TRUE(contains_pair(candidates, 1, 2));
 }
 
-TEST(CandidateGeneration, NoInvalidPairs) {
+TEST_F(CandidateGenerationTest,NoInvalidPairs) {
     mags::Graph graph(3);
     graph[0] = {1}; graph[1] = {0, 2}; graph[2] = {1};
 
@@ -279,7 +268,7 @@ TEST(CandidateGeneration, NoInvalidPairs) {
     }
 }
 
-TEST(CandidateGeneration, TriangleNoDuplicates) {
+TEST_F(CandidateGenerationTest, TriangleNoDuplicates) {
     mags::Graph graph(3);
     graph[0] = {1, 2}; graph[1] = {0, 2}; graph[2] = {0, 1};
 
@@ -289,7 +278,7 @@ TEST(CandidateGeneration, TriangleNoDuplicates) {
     EXPECT_EQ(candidates.size(), 3);
 }
 
-TEST(CandidateGeneration, IsolatedNode) {
+TEST_F(CandidateGenerationTest, IsolatedNodeSize) {
     mags::Graph graph(5);
     graph[0] = {1}; graph[1] = {0};
     // Nodes 2, 3, 4 are isolated
@@ -300,11 +289,10 @@ TEST(CandidateGeneration, IsolatedNode) {
     EXPECT_EQ(candidates.size(), 1); // Only (0, 1) should exist
 }
 
-TEST(CandidateGeneration, SeedingIsDeterministic) {
+TEST_F(CandidateGenerationTest, SeedingIsDeterministic) {
     mags::Graph graph(4);
     graph[0] = {1, 2}; graph[1] = {0, 3}; graph[2] = {0, 3}; graph[3] = {1, 2};
 
-    // With a fixed seed (2333), the permutations must be identical every run
     const auto run1 = mags::cg::generate_candidates(graph, 10);
     const auto run2 = mags::cg::generate_candidates(graph, 10);
 
@@ -312,7 +300,7 @@ TEST(CandidateGeneration, SeedingIsDeterministic) {
     EXPECT_EQ(run1, run2);
 }
 
-TEST(CandidateGeneration, MinHashSignaturesWithinVertexRange) {
+TEST_F(CandidateGenerationTest, MinHashSignaturesWithinVertexRange) {
     mags::Graph graph(4);
     graph[0] = {1}; graph[1] = {0, 2}; graph[2] = {1, 3}; graph[3] = {2};
 
