@@ -7,7 +7,7 @@
 #include "types.h"
 
 namespace mags::util {
-    void sort_neighbors(mags::Graph& graph);
+    void sort_neighbors(Graph& graph);
 }
 
 

@@ -24,8 +24,8 @@ namespace mags::cg {
         void get_top_k_candidate_pairs(
             NodeID u,
             int k,
-            const std::unordered_set<NodeID>& two_hop_neighbors,
             const SignatureMatrix& signatures,
+            const std::unordered_set<NodeID>& two_hop_neighbors,
             phmap::btree_set<std::pair<int, NodeID>>& top_k);
     }
 }

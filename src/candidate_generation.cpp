@@ -7,8 +7,6 @@
 #include <unordered_set>
 #include <algorithm>
 
-// TODO: duplicate - understand if (u != v)?, signatures.at(nbr).at(h_idx) = i; - understand
-// TODO: refactoring - function for 2Hop generation, and function for TopK selection
 namespace mags::cg {
 
     namespace detail {
@@ -30,6 +28,10 @@ namespace mags::cg {
                 for (int i = 0; i < h_func.size(); ++i) {
                     for (const NodeID u = h_func.at(i); const NodeID nbr : graph.at(u)) {
                         if (signatures.at(nbr).at(h_idx) == -1) {
+                            // uses minimum rank instead of minimum hash
+                            // nbr in rank-order 'i' ensures 'i' is the minimum rank for this permutation
+                            // by storing the minimum rank; one ensures that the probability of two nodes
+                            // sharing the same rank 'i' is equal to their Jaccard similarity.
                             signatures.at(nbr).at(h_idx) = i;
                         }
                     }
@@ -53,7 +55,6 @@ namespace mags::cg {
             std::unordered_set<NodeID>& two_hop_neighbors) {
             const std::vector<NodeID>& neighbors =  graph.at(u);
 
-            // Line 5: Determine subset S size (sample b nodes)
             const int num_to_sample = std::min(b, static_cast<int>(neighbors.size()));
 
             // Line 6 (Part A): Let 2Hop <- N_u (include all immediate neighbors)
@@ -62,8 +63,9 @@ namespace mags::cg {
                 if (one_hop > u) two_hop_neighbors.insert(one_hop);
             }
 
-            // Line 6 (Part B): 2Hop <- Union of N_w for w in S (include all neighbors of the b sampled nodes in S)
             for (int i = 0; i < num_to_sample; ++i) {
+                // Line 5: Sample a random subset S of b nodes from N_u
+                // Line 6 (Part B): 2Hop <- Union of N_w for w in S (include all neighbors of the b sampled nodes in S)
                 for (const NodeID one_hop = neighbors.at(i); const NodeID two_hop : graph.at(one_hop)) {
                     // Avoiding duplicate node pairs, as {u, v} = {v, u}
                     if (two_hop > u) two_hop_neighbors.insert(two_hop);
@@ -74,8 +76,8 @@ namespace mags::cg {
         void get_top_k_candidate_pairs(
             const NodeID u,
             const int k,
-            const std::unordered_set<NodeID>& two_hop_neighbors,
             const SignatureMatrix& signatures,
+            const std::unordered_set<NodeID>& two_hop_neighbors,
             phmap::btree_set<std::pair<int, NodeID>>& top_k) {
             // Line 7: For each neighboring node in 2Hop
             for (const NodeID v : two_hop_neighbors) {
@@ -109,7 +111,7 @@ namespace mags::cg {
             detail::get_two_hop_neighbors(graph, u, B_SAMPLE, two_hop_neighbors);
 
             phmap::btree_set<std::pair<int, NodeID>> top_k;
-            detail::get_top_k_candidate_pairs(u, k, two_hop_neighbors, signatures, top_k);
+            detail::get_top_k_candidate_pairs(u, k, signatures, two_hop_neighbors, top_k);
 
             // Line 10: Put (u, v) into CP for each selected v
             for (const auto&[_, v] : top_k) {
