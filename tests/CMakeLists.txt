@@ -13,7 +13,9 @@ FetchContent_MakeAvailable(googletest)
 add_executable(mags_tests
         candidate_generation_test.cpp
         GraphTestUtility.cpp
-        GraphTestUtility.h)
+        GraphTestUtility.h
+        DisjointSetUnionTest.cpp
+)
 
 # 2. Use 'cg_logic' to match your root library name
 target_link_libraries(mags_tests
@@ -22,6 +24,8 @@ target_link_libraries(mags_tests
         GTest::gtest_main
         GTest::gtest
 )
+
+target_compile_definitions(cg_logic PUBLIC UNIT_TESTING)
 
 # 3. Discover individual tests for the CLion UI
 include(GoogleTest)
