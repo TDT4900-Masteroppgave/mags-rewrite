@@ -9,7 +9,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-# 1. Ensure the source file path is correct relative to this folder
 add_executable(mags_tests
         candidate_generation_test.cpp
         GraphTestUtility.cpp
@@ -17,16 +16,14 @@ add_executable(mags_tests
         DisjointSetUnionTest.cpp
 )
 
-# 2. Use 'cg_logic' to match your root library name
 target_link_libraries(mags_tests
         PRIVATE
-        cg_logic
+        mags_logic
         GTest::gtest_main
         GTest::gtest
 )
 
-target_compile_definitions(cg_logic PUBLIC UNIT_TESTING)
+target_compile_definitions(mags_logic PUBLIC UNIT_TESTING)
 
-# 3. Discover individual tests for the CLion UI
 include(GoogleTest)
 gtest_discover_tests(mags_tests)

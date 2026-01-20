@@ -10,29 +10,32 @@ if(APPLE)
     include_directories(SYSTEM "${SDK_PATH}/usr/include/c++/v1")
 endif()
 
-# Core library to avoid redundant compilation in tests and main
-add_library(cg_logic
+set(MAGS_LOGIC_SOURCES
         src/candidate_generation.cpp
+        src/util.cpp
+        src/DisjointSetUnion.cpp
+)
+
+set(MAGS_LOGIC_HEADERS
         include/mags/candidate_generation.h
         include/mags/types.h
-        src/util.cpp
         include/mags/util.h
-        src/DisjointSetUnion.cpp
         include/mags/DisjointSetUnion.h
 )
 
+add_library(mags_logic ${MAGS_LOGIC_SOURCES} ${MAGS_LOGIC_HEADERS})
+
 add_executable(mags_rewrite main.cpp)
-target_link_libraries(mags_rewrite PRIVATE cg_logic)
+target_link_libraries(mags_rewrite PRIVATE mags_logic)
 
 include(FetchContent)
-
 FetchContent_Declare(
         parallel_hashmap
         GIT_REPOSITORY https://github.com/greg7mdp/parallel-hashmap.git
-        GIT_TAG        v2.0.0
+        GIT_TAG v2.0.0
 )
 FetchContent_MakeAvailable(parallel_hashmap)
-target_link_libraries(cg_logic PUBLIC phmap)
+target_link_libraries(mags_logic PUBLIC phmap)
 
-target_include_directories(cg_logic PUBLIC include)
+target_include_directories(mags_logic PUBLIC include)
 add_subdirectory(tests)
