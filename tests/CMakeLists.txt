@@ -10,7 +10,10 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 
 # 1. Ensure the source file path is correct relative to this folder
-add_executable(mags_tests candidate_generation_test.cpp)
+add_executable(mags_tests
+        candidate_generation_test.cpp
+        GraphTestUtility.cpp
+        GraphTestUtility.h)
 
 # 2. Use 'cg_logic' to match your root library name
 target_link_libraries(mags_tests
