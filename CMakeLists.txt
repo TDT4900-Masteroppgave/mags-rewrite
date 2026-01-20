@@ -16,7 +16,10 @@ add_library(cg_logic
         include/mags/candidate_generation.h
         include/mags/types.h
         src/util.cpp
-        include/mags/util.h)
+        include/mags/util.h
+        src/DisjointSetUnion.cpp
+        include/mags/DisjointSetUnion.h
+)
 
 add_executable(mags_rewrite main.cpp)
 target_link_libraries(mags_rewrite PRIVATE cg_logic)

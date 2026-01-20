@@ -2,10 +2,9 @@
 
 namespace mags {
 
-DisjointSetUnion::DisjointSetUnion(const int n) {
-  parents.resize(n);
+DisjointSetUnion::DisjointSetUnion(const int n)
+  : parents(n), sizes(n, 1) {
   std::iota(parents.begin(), parents.end(), 0);
-  sizes.assign(n, 1);
 }
 
 [[nodiscard]] NodeID DisjointSetUnion::find(const NodeID node) const {
