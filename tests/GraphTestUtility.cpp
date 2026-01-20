@@ -5,8 +5,10 @@
 
 #include <gtest/gtest.h>
 
+namespace mags::test {
+
 void GraphTestUtility::SetUp() {
-  mags::cg::SEED = 233;
+  cg::SEED = 233;
 
   diamond = {{1, 2}, {0, 3}, {0, 3}, {1, 2}};
   triangle = {{1, 2}, {0, 2}, {0, 1}};
@@ -18,12 +20,12 @@ void GraphTestUtility::SetUp() {
 
   for (auto *g :
        {&diamond, &triangle, &star, &path, &ladder, &isolated, &clique}) {
-    mags::util::sort_neighbors(*g);
+    util::sort_neighbors(*g);
   }
 }
 
-mags::Graph GraphTestUtility::create_ladder_graph() {
-  mags::Graph g;
+Graph GraphTestUtility::create_ladder_graph() {
+  Graph g;
   g.assign(15, {});
 
   g.at(0) = {10, 11, 12, 14, 14};
@@ -40,8 +42,8 @@ mags::Graph GraphTestUtility::create_ladder_graph() {
   return g;
 }
 
-mags::Graph GraphTestUtility::create_star_graph() {
-  mags::Graph g(11);
+Graph GraphTestUtility::create_star_graph() {
+  Graph g(11);
   for (int i = 0; i <= 10; ++i) {
     g.at(0).push_back(i);
     g.at(i).push_back(0);
@@ -49,8 +51,8 @@ mags::Graph GraphTestUtility::create_star_graph() {
   return g;
 }
 
-mags::Graph GraphTestUtility::create_clique_graph() {
-  mags::Graph g(4);
+Graph GraphTestUtility::create_clique_graph() {
+  Graph g(4);
   for (int i = 0; i < g.size(); ++i) {
     for (int j = i + 1; j < g.size(); ++j) {
       g.at(i).push_back(j);
@@ -60,20 +62,20 @@ mags::Graph GraphTestUtility::create_clique_graph() {
   return g;
 }
 
-int GraphTestUtility::SignatureMatches(const int u, const int v,
-                                       const mags::cg::SignatureMatrix &sigs) {
+int GraphTestUtility::signature_matches(const int u, const int v,
+                                       const cg::SignatureMatrix &sigs) {
   int matches = 0;
-  for (int h = 0; h < mags::cg::H_FUNCS; ++h) {
+  for (int h = 0; h < cg::H_FUNCS; ++h) {
     if (sigs.at(u).at(h) == sigs.at(v).at(h))
       matches++;
   }
   return matches;
 }
 
-bool GraphTestUtility::HasPair(const mags::cg::CandidatePairSet &cp, int u,
-                               int v) {
-  const std::pair<mags::NodeID, mags::NodeID> target =
+bool GraphTestUtility::has_pair(const cg::CandidatePairSet &cp, int u, int v) {
+  const std::pair<NodeID, NodeID> target =
       u < v ? std::make_pair(u, v) : std::make_pair(v, u);
 
   return cp.contains(target);
 }
+} // namespace mags::test

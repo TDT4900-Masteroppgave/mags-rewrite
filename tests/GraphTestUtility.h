@@ -4,28 +4,29 @@
 #include "mags/types.h"
 #include <gtest/gtest.h>
 
+namespace mags::test {
 class GraphTestUtility : public testing::Test {
 protected:
-  mags::Graph diamond;
-  mags::Graph triangle;
-  mags::Graph path;
-  mags::Graph isolated;
-  mags::Graph star;
-  mags::Graph ladder;
-  mags::Graph clique;
+  Graph diamond;
+  Graph triangle;
+  Graph path;
+  Graph isolated;
+  Graph star;
+  Graph ladder;
+  Graph clique;
 
   void SetUp() override;
 
-  static mags::Graph create_ladder_graph();
+  static Graph create_ladder_graph();
 
-  static mags::Graph create_star_graph();
+  static Graph create_star_graph();
 
-  static mags::Graph create_clique_graph();
+  static Graph create_clique_graph();
 
-  static int SignatureMatches(int u, int v,
-                              const mags::cg::SignatureMatrix &sigs);
+  static int signature_matches(int u, int v, const cg::SignatureMatrix &sigs);
 
-  static bool HasPair(const mags::cg::CandidatePairSet &cp, int u, int v);
+  static bool has_pair(const cg::CandidatePairSet &cp, int u, int v);
 };
+} // namespace mags::test
 
 #endif // MAGS_REWRITE_TEST_UTIL_H
