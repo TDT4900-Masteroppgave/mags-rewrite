@@ -4,8 +4,10 @@
 #include <unordered_set>
 
 #include "types.h"
-#include <vector>
+
 #include <parallel_hashmap/btree.h>
+#include <set>
+#include <vector>
 
 namespace mags::cg {
     constexpr int H_FUNCS = 40;

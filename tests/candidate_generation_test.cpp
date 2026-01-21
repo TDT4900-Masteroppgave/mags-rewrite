@@ -3,6 +3,7 @@
 #include "mags/candidate_generation.h"
 #include <algorithm>
 #include <gtest/gtest.h>
+#include <random>
 
 namespace mags::test {
 using namespace mags::cg;

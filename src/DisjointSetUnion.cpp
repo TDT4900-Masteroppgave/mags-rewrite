@@ -1,5 +1,7 @@
 #include "mags/DisjointSetUnion.h"
 
+#include <numeric>
+
 namespace mags {
 
 DisjointSetUnion::DisjointSetUnion(const int n)
