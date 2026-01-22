@@ -14,6 +14,7 @@ set(MAGS_LOGIC_SOURCES
         src/candidate_generation.cpp
         src/util.cpp
         src/DisjointSetUnion.cpp
+        src/Partition.cpp
 )
 
 set(MAGS_LOGIC_HEADERS
@@ -21,6 +22,7 @@ set(MAGS_LOGIC_HEADERS
         include/mags/types.h
         include/mags/util.h
         include/mags/DisjointSetUnion.h
+        include/mags/Partition.h
 )
 
 add_library(mags_logic ${MAGS_LOGIC_SOURCES} ${MAGS_LOGIC_HEADERS})

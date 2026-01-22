@@ -14,6 +14,7 @@ add_executable(mags_tests
         GraphTestUtility.cpp
         GraphTestUtility.h
         DisjointSetUnionTest.cpp
+        PartitionTest.cpp
 )
 
 target_link_libraries(mags_tests
