@@ -22,10 +22,6 @@ protected:
   static Graph create_star_graph();
 
   static Graph create_clique_graph();
-
-  static int signature_matches(int u, int v, const cg::SignatureMatrix &sigs);
-
-  static bool has_pair(const cg::CandidatePairSet &cp, int u, int v);
 };
 } // namespace mags::test
 

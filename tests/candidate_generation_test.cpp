@@ -4,12 +4,33 @@
 #include <algorithm>
 #include <gtest/gtest.h>
 #include <random>
+#include <ranges>
 
-namespace mags::test {
-using namespace mags::cg;
+using namespace mags;
+
+namespace mags::cg::test {
 using namespace detail;
 
-class CandidateGenerationTest : public GraphTestUtility {};
+namespace {
+int signature_matches(const int u, const int v,
+                      const cg::SignatureMatrix &sigs) {
+  int matches = 0;
+  for (int h = 0; h < H_FUNCS; ++h) {
+    if (sigs.at(u).at(h) == sigs.at(v).at(h))
+      matches++;
+  }
+  return matches;
+}
+
+bool has_pair(const cg::CandidatePairSet &cp, int u, int v) {
+  const std::pair<NodeID, NodeID> target =
+      u < v ? std::make_pair(u, v) : std::make_pair(v, u);
+
+  return cp.contains(target);
+}
+} // namespace
+
+class CandidateGenerationTest : public mags::test::GraphTestUtility {};
 
 TEST_F(CandidateGenerationTest, IdenticalNeighbors) {
   // g with 6 nodes, node 0 and 1 has the same neighbors, and nodes 3 and 4 have
@@ -150,8 +171,7 @@ TEST_F(CandidateGenerationTest, Symmetry) {
     sigs.at(1).at(h) = static_cast<int>(rng() % 15);
   }
 
-  EXPECT_EQ(mh_score(0, 1, sigs),
-            mh_score(1, 0, sigs));
+  EXPECT_EQ(mh_score(0, 1, sigs), mh_score(1, 0, sigs));
 }
 
 TEST_F(CandidateGenerationTest, IsolatedNodesMatch) {
@@ -220,7 +240,7 @@ TEST_F(CandidateGenerationTest, TopKPriorityEviction) {
 
   EXPECT_EQ(top_k.size(), k);
   // Node 3 should have been evicted because its score is 0
-  for (const auto &[score, v] : top_k) {
+  for (const auto &v : top_k | std::views::values) {
     EXPECT_NE(v, 3);
   }
 }
@@ -343,4 +363,4 @@ TEST_F(CandidateGenerationTest, TopKEviction) {
   }
   EXPECT_TRUE(found_best);
 }
-} // namespace mags::test
+} // namespace mags::cg::test

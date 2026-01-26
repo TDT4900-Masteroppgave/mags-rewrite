@@ -61,21 +61,4 @@ Graph GraphTestUtility::create_clique_graph() {
   }
   return g;
 }
-
-int GraphTestUtility::signature_matches(const int u, const int v,
-                                       const cg::SignatureMatrix &sigs) {
-  int matches = 0;
-  for (int h = 0; h < cg::H_FUNCS; ++h) {
-    if (sigs.at(u).at(h) == sigs.at(v).at(h))
-      matches++;
-  }
-  return matches;
-}
-
-bool GraphTestUtility::has_pair(const cg::CandidatePairSet &cp, int u, int v) {
-  const std::pair<NodeID, NodeID> target =
-      u < v ? std::make_pair(u, v) : std::make_pair(v, u);
-
-  return cp.contains(target);
-}
 } // namespace mags::test
