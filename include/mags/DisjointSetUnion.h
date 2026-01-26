@@ -11,7 +11,7 @@ class DisjointSetUnion {
 
 public:
   DisjointSetUnion() = default;
-  explicit DisjointSetUnion(int n);
+  explicit DisjointSetUnion(size_t n);
 
   [[nodiscard]] NodeID find(NodeID node) const;
 

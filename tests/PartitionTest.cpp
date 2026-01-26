@@ -5,7 +5,7 @@
 using namespace mags;
 
 TEST(PartitionTest, Initialization) {
-  constexpr int n = 5;
+  constexpr size_t n = 5;
   Partition p(n);
   const Graph empty_graph{n, std::vector<NodeID>{}};
 
@@ -14,15 +14,15 @@ TEST(PartitionTest, Initialization) {
 }
 
 TEST(PartitionTest, MergePersistence) {
-  constexpr int n = 5;
+  constexpr size_t n = 5;
   Partition p(n);
 
   p.merge(0, 1);
-  EXPECT_EQ(p.find(0), p.find(1));
+  EXPECT_EQ(p.find_super_node(0), p.find_super_node(1));
 }
 
 TEST(PartitionTest, EmpptyFinalize) {
-  constexpr int n = 5;
+  constexpr size_t n = 5;
   Partition p(n);
   const Graph empty_graph{n, std::vector<NodeID>{}};
 
@@ -34,8 +34,7 @@ TEST(PartitionTest, EmpptyFinalize) {
 
 TEST(PartitionTest, CorrectSizeAfterMerge) {
   const Graph g = {{1}, {0}, {3}, {2}};
-
-  Partition p(4);
+  Partition p(g.size());
   p.merge(0, 1);
   p.merge(2, 3);
   p.finalize(g);
@@ -45,13 +44,12 @@ TEST(PartitionTest, CorrectSizeAfterMerge) {
 
 TEST(PartitonTest, CorrectMembersSizeContent) {
   const Graph g = {{1}, {0}, {}, {}};
-  const int n = static_cast<int>(g.size());
-  Partition p(n);
+  Partition p(g.size());
 
   p.merge(0, 1);
   p.finalize(g);
 
-  const NodeID root = p.find(0);
+  const NodeID root = p.find_super_node(0);
   const auto &members = p.get_members().at(root);
 
   EXPECT_EQ(members.size(), 2);
@@ -63,30 +61,27 @@ TEST(PartitonTest, CorrectMembersSizeContent) {
 
 TEST(PartitonTest, SimpleEdgeCount) {
   const Graph g = {{1}, {0}};
-  const int n = static_cast<int>(g.size());
-  Partition p(n);
+  Partition p(g.size());
 
   p.finalize(g);
-  const NodeID r0 = p.find(0);
-  const NodeID r1 = p.find(1);
+  const NodeID r0 = p.find_super_node(0);
+  const NodeID r1 = p.find_super_node(1);
   EXPECT_EQ(p.get_edge_counts().at(r0).at(r1), 1);
 }
 
 TEST(PartitionTest, SimpleEdgeCountWithMerge) {
   const Graph g = {{1}, {0}};
-  const int n = static_cast<int>(g.size());
-  Partition p(n);
+  Partition p(g.size());
   p.merge(0, 1);
   p.finalize(g);
 
-  const NodeID root = p.find(0);
+  const NodeID root = p.find_super_node(0);
   EXPECT_EQ(p.get_edge_counts().at(root).at(root), 1);
 }
 
 TEST(PartitionTest, SimpleCatesianProduct) {
   const Graph g = {{1}, {0}, {3}, {2}};
-  const int n = static_cast<int>(g.size());
-  Partition p(n);
+  Partition p(g.size());
   p.merge(0, 1); // Super-Node A size 2
   p.merge(2, 3); // Super-Node B size 2
   p.finalize(g);
@@ -97,19 +92,17 @@ TEST(PartitionTest, SimpleCatesianProduct) {
 
 TEST(PartitionTest, CartesianPrdouctSelfLoop) {
   const Graph g = {{1}, {0}, {2}};
-  const int n = static_cast<int>(g.size());
-  Partition p(n);
+  Partition p(g.size());
   p.merge(0, 1);
   p.merge(1, 2); // Super-Node size 3
   p.finalize(g);
 
-  EXPECT_EQ(p.get_cartesian_product(0, 1), 3);
+  EXPECT_EQ(p.get_cartesian_product(0, 0), 3);
 }
 
 TEST(PartitionTest, CartesianProductSingleNode) {
   const Graph g = {{0}};
-  const int n = static_cast<int>(g.size());
-  Partition p(n);
+  Partition p(g.size());
   p.finalize(g);
 
   EXPECT_EQ(p.get_cartesian_product(0, 0), 0);

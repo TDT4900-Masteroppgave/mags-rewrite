@@ -4,8 +4,7 @@
 
 namespace mags {
 
-DisjointSetUnion::DisjointSetUnion(const int n)
-  : parents(n), sizes(n, 1) {
+DisjointSetUnion::DisjointSetUnion(const size_t n) : parents(n), sizes(n, 1) {
   std::iota(parents.begin(), parents.end(), 0);
 }
 

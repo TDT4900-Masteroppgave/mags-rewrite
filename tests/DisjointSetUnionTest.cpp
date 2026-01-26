@@ -6,7 +6,7 @@ using namespace mags;
 
 class DisjointSetUnionTest : public testing::Test {
 protected:
-  constexpr static int n = 10;
+  constexpr static size_t n = 10;
   DisjointSetUnion dsu;
   void SetUp() override { dsu = DisjointSetUnion(n); }
 };
