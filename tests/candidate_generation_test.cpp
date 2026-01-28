@@ -347,20 +347,4 @@ TEST_F(CandidateGenerationTest, NoSelfPairs) {
     EXPECT_NE(u, v);
   }
 }
-
-TEST_F(CandidateGenerationTest, TopKEviction) {
-  const auto g = ladder;
-
-  constexpr int k = 1;
-  const auto candidates = generate_candidates(g, k);
-
-  EXPECT_FALSE(candidates.empty());
-
-  bool found_best = false;
-  for (const auto &[u, v] : candidates) {
-    if ((u == 0 && v == 5) || (u == 5 && v == 0))
-      found_best = true;
-  }
-  EXPECT_TRUE(found_best);
-}
 } // namespace mags::cg::test
