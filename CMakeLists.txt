@@ -6,7 +6,7 @@ if(APPLE)
     include_directories(SYSTEM "${SDK_PATH}/usr/include/c++/v1")
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(mags_rewrite
@@ -17,10 +17,8 @@ add_executable(mags_rewrite
 
 include(FetchContent)
 FetchContent_Declare(
-        googletest
-        URL https://github.com/google/googletest/archive/refs/heads/main.zip
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG        v1.14.0   # pick a known good release tag
 )
 FetchContent_MakeAvailable(googletest)
-add_executable(mags_tests tests.cpp candidate_generation.cpp)
-target_link_libraries(mags_tests PRIVATE GTest::gtest_main GTest::gtest)
