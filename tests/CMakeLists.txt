@@ -4,22 +4,27 @@ project(mags_rewrite_tests)
 include(FetchContent)
 FetchContent_Declare(
         googletest
-        URL https://github.com/google/googletest/archive/refs/heads/main.zip
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG v1.14.0
 )
 FetchContent_MakeAvailable(googletest)
 
-# 1. Ensure the source file path is correct relative to this folder
-add_executable(mags_tests candidate_generation_test.cpp)
+add_executable(mags_tests
+        candidate_generation_test.cpp
+        GraphTestUtility.cpp
+        GraphTestUtility.h
+        DisjointSetUnionTest.cpp
+        PartitionTest.cpp
+)
 
-# 2. Use 'cg_logic' to match your root library name
 target_link_libraries(mags_tests
         PRIVATE
-        cg_logic
+        mags_logic
         GTest::gtest_main
         GTest::gtest
 )
 
-# 3. Discover individual tests for the CLion UI
+target_compile_definitions(mags_logic PUBLIC UNIT_TESTING)
+
 include(GoogleTest)
 gtest_discover_tests(mags_tests)

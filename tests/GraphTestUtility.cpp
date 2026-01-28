@@ -1,0 +1,64 @@
+#include "GraphTestUtility.h"
+#include "mags/candidate_generation.h"
+#include "mags/types.h"
+#include "mags/util.h"
+
+#include <gtest/gtest.h>
+
+namespace mags::test {
+
+void GraphTestUtility::SetUp() {
+  cg::SEED = 233;
+
+  diamond = {{1, 2}, {0, 3}, {0, 3}, {1, 2}};
+  triangle = {{1, 2}, {0, 2}, {0, 1}};
+  path = {{1}, {0, 2}, {1, 3}, {2}};
+  isolated = {{1}, {0}, {}, {}, {}};
+  star = create_star_graph();
+  ladder = create_ladder_graph();
+  clique = create_clique_graph();
+
+  for (auto *g :
+       {&diamond, &triangle, &star, &path, &ladder, &isolated, &clique}) {
+    util::sort_neighbors(*g);
+  }
+}
+
+Graph GraphTestUtility::create_ladder_graph() {
+  Graph g;
+  g.assign(15, {});
+
+  g.at(0) = {10, 11, 12, 14, 14};
+  for (const int nbr : g.at(0))
+    g.at(nbr).push_back(0);
+
+  for (int i = 1; i <= 5; ++i) {
+    for (int j = 0; j < i; ++j) {
+      constexpr int shared_nbr = 10;
+      g.at(i).push_back(shared_nbr);
+      g.at(shared_nbr).push_back(i);
+    }
+  }
+  return g;
+}
+
+Graph GraphTestUtility::create_star_graph() {
+  Graph g(11);
+  for (int i = 0; i <= 10; ++i) {
+    g.at(0).push_back(i);
+    g.at(i).push_back(0);
+  }
+  return g;
+}
+
+Graph GraphTestUtility::create_clique_graph() {
+  Graph g(4);
+  for (int i = 0; i < g.size(); ++i) {
+    for (int j = i + 1; j < g.size(); ++j) {
+      g.at(i).push_back(j);
+      g.at(j).push_back(i);
+    }
+  }
+  return g;
+}
+} // namespace mags::test
