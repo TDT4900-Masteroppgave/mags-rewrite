@@ -19,3 +19,8 @@ cmake-build-*/
 .DS_Store
 .AppleDouble
 .LSOverride
+
+.clangd
+.cache
+
+parallel_hashmap/
