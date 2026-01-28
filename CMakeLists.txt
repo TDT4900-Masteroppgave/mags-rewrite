@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(mags_rewrite)
-include(CTest)
+enable_testing()
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,8 +24,8 @@ set(MAGS_LOGIC_HEADERS
         include/mags/DisjointSetUnion.h
         include/mags/Partition.h
 )
-
 add_library(mags_logic ${MAGS_LOGIC_SOURCES} ${MAGS_LOGIC_HEADERS})
+target_include_directories(mags_logic PUBLIC include)
 
 add_executable(mags_rewrite main.cpp)
 target_link_libraries(mags_rewrite PRIVATE mags_logic)
@@ -39,5 +39,5 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(parallel_hashmap)
 target_link_libraries(mags_logic PUBLIC phmap)
 
-target_include_directories(mags_logic PUBLIC include)
 add_subdirectory(tests)
+target_compile_definitions(mags_logic PUBLIC UNIT_TESTING)

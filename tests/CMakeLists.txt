@@ -24,7 +24,5 @@ target_link_libraries(mags_tests
         GTest::gtest
 )
 
-target_compile_definitions(mags_logic PUBLIC UNIT_TESTING)
-
 include(GoogleTest)
 gtest_discover_tests(mags_tests)
