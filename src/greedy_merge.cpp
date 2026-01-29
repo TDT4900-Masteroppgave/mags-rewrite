@@ -7,9 +7,10 @@
 
 #include "parallel_hashmap/phmap.h"
 #include "parallel_hashmap/btree.h"
-#include "mags_types.h"
 #include "parallel_hashmap/phmap_fwd_decl.h"
-#include "super_node_set.h"
+
+#include "mags/types.h"
+#include "mags/super_node_set.h"
 
 mags::NodePair minPair(mags::NodeID u, mags::NodeID v) {
     return u < v ? std::make_pair(u, v) : std::make_pair(v, u);
@@ -23,7 +24,7 @@ phmap::btree_set<std::pair<double, mags::NodePair>, std::greater<>> get_priority
     for (int u = 0; u < static_cast<int>(candidate_set.size()); u++) { // loops through each node
         // loops through candidates to node and their saving
         for (auto [v, saving_score] : candidate_set[u]) { 
-            if (u < v) { // processes only upper triangle to avoid inserting duplicates 
+            if (u > v) { // processes only upper triangle to avoid inserting duplicates 
                 // Inserts (saving_score, u, v) into the priority queue 
                 priority_queue.emplace(saving_score, minPair(u, v));
             }
@@ -50,7 +51,8 @@ double merge_threshold(
 
 void replace(
     mags::NodeID v,
-    SuperNodeSet super_nodes_set,
+    SuperNodeSet& super_nodes_set,
+    // TODO: create alias for data types for data types for candidate_set and priority_queue
     std::vector<phmap::flat_hash_map<int, double>>& candidate_set,
     phmap::btree_set<std::pair<double, mags::NodePair>, std::greater<>>& priority_queue) {
     // v is a node to remove, and u is its new representative
@@ -80,8 +82,8 @@ void replace(
 void evaluate(
     mags::NodeID u,
     mags::NodeID v, 
-    double &old_saving_score,
     SuperNodeSet& super_nodes_set,
+    std::vector<phmap::flat_hash_map<int, double>>& candidate_set,
     std::vector<mags::NodeID>& to_remove_suv, 
     std::vector<std::pair<int, double>>& to_update_suv,
     double threshold_new_saving_score = -0.03) {
@@ -89,13 +91,13 @@ void evaluate(
         double new_saving_score = super_nodes_set.saving(u, v);
 
         // early termination
-        if (old_saving_score == new_saving_score) return;
+        if (candidate_set[u][v] == new_saving_score) return;
 
         if (new_saving_score <= threshold_new_saving_score) { // remove v if saving is less than threshold
             to_remove_suv.push_back(v);
         } else { // update v if saving is equal or greater than threshold
-            to_update_suv.push_back({v, old_saving_score}); // here old_saving_score is pushed to identify the PQ when updating it 
-            old_saving_score = new_saving_score; // updates saving score to candidate_set[u][v] (because of reference)
+            to_update_suv.push_back({v, candidate_set[u][v]}); // here old_saving_score is pushed to identify the PQ when updating it 
+            candidate_set[u][v] = new_saving_score; // updates saving score to candidate_set[u][v] (because of reference)
         }
 }
 
@@ -188,10 +190,10 @@ SuperNodeSet merge(
 
             // Line 11: Loops over canidate pairs in the candidate set containing the node in Line 10 
             for (auto& [v, old_saving_score] : candidate_set[u]) {
-                if (batch_to_update.contains(v) && v < u) continue; // process only upper triangle
+                if (batch_to_update.contains(v) && u > v) continue; // process only upper triangle
                 
                 // Marks the candidate pairs to be removed or updated in Line 12
-                evaluate(u, v, old_saving_score, super_nodes_set, to_remove_suv, to_update_suv, threshold_new_saving_score);
+                evaluate(u, v, super_nodes_set, candidate_set, to_remove_suv, to_update_suv, threshold_new_saving_score);
             }
             // Line 12: Update the saving belonging to the candidate pairs in Line 11
             for (auto v : to_remove_suv) {

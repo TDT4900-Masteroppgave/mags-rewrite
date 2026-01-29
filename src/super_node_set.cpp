@@ -1,5 +1,5 @@
-#include "mags_types.h"
-#include "super_node_set.h"
+#include "mags/types.h"
+#include "mags/super_node_set.h"
 
 SuperNodeSet::SuperNodeSet(mags::Graph graph) 
 : super_nodes(graph.size(), 0)
@@ -14,6 +14,7 @@ SuperNodeSet::SuperNodeSet(mags::Graph graph)
     
     // initializes edge count for between each node and their neighbor to 1, 
     // no entry is created for nodes that does not have any neighbor
+    // TODO: is it necessary to do this here? No super node will ever have a nbr here
     neighbor_edge_counts.resize(graph.size());
     for (int u = 0; u < graph.size(); u++) {
         for (int nbr : graph.at(u)) {
@@ -117,10 +118,7 @@ double SuperNodeSet::saving(mags::NodeID u, mags::NodeID v) {
     return (c_u + c_v - c_w) / (c_u + c_v);
 }
 
-void SuperNodeSet::update_neighbor_edge_counts(mags::NodeID u, mags::NodeID v) {
-    mags::NodeID u_super = get_super_node(u);
-    mags::NodeID v_super = get_super_node(v);
-
+void SuperNodeSet::update_neighbor_edge_counts(mags::NodeID u_super, mags::NodeID v_super) {
     // delete v as neighbor
     for (auto [nbr, num_nbr_edges] : neighbor_edge_counts[v_super]) {
         neighbor_edge_counts[nbr].erase(v_super);
@@ -130,7 +128,7 @@ void SuperNodeSet::update_neighbor_edge_counts(mags::NodeID u, mags::NodeID v) {
 
     // update the edge count to the merged node w (stored in u)
     // TODO: this step can be optimized because the saving step has already performed the same calculation. 
-    phmap::flat_hash_map<int, int> w_neighbor_edge_counts = get_neighbor_edge_counts(u, v); 
+    phmap::flat_hash_map<int, int> w_neighbor_edge_counts = get_neighbor_edge_counts(u_super, v_super); 
     neighbor_edge_counts[u_super] = w_neighbor_edge_counts;
 
     // update the edge count where w (stored in u) is a nbr
@@ -155,6 +153,7 @@ void SuperNodeSet::merge(mags::NodeID u, mags::NodeID v) {
         num_vertices[u_super] += num_vertices[v_super];
 
         // replaces u and v in neigbour_edge_counts to w
+        // TODO: test if this logic is correct, because v is already set to be the super node u. It is possible that v does not contain anything or already refers to u
         update_neighbor_edge_counts(u, v);
     }
 }

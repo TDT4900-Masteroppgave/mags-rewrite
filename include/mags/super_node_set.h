@@ -4,16 +4,18 @@
 
 #include <vector>
 
-#include "parallel_hashmap/phmap.h"
-#include "parallel_hashmap/btree.h"
-#include "mags_types.h"
+
+#include "types.h"
+
+#include <parallel_hashmap/phmap.h>
+#include <parallel_hashmap/btree.h>
 
 class SuperNodeSet {
-    public:
-        std::vector<mags::NodeID> super_nodes; // vector that stores the mapping between each original node (the index) and their belonging supernode (the value)
-        std::vector<int> num_vertices; // stores the number of vertices in each supernode
-        std::vector<phmap::flat_hash_map<int, int>> neighbor_edge_counts; // stores a map, for each vertex, containig <neigbour to the node, number of edges between node and neighbour>
+    std::vector<mags::NodeID> super_nodes; // vector that stores the mapping between each original node (the index) and their belonging supernode (the value)
+    std::vector<int> num_vertices; // stores the number of vertices in each supernode
+    std::vector<phmap::flat_hash_map<int, int>> neighbor_edge_counts; // stores a map, for each vertex, containig <neigbour to the node, number of edges between node and neighbour>
 
+    public:
         SuperNodeSet(mags::Graph);
         
         mags::NodeID get_super_node(mags::NodeID x);
