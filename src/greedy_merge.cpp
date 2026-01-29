@@ -12,26 +12,29 @@
 #include "mags/types.h"
 #include "mags/super_node_set.h"
 
-mags::NodePair minPair(mags::NodeID u, mags::NodeID v) {
+using namespace mags;
+
+NodePair minPair(NodeID u, NodeID v) {
     return u < v ? std::make_pair(u, v) : std::make_pair(v, u);
 }
 
-phmap::btree_set<std::pair<double, mags::NodePair>, std::greater<>> get_priority_queue(
-    std::vector<phmap::flat_hash_map<int, double>>& candidate_set, SuperNodeSet super_node_set) {
-    phmap::btree_set<std::pair<double, mags::NodePair>, std::greater<>> priority_queue;
+PriorityQueue get_priority_queue(
+    CandidateSet& candidate_set,
+    SuperNodeSet super_node_set) {
+        PriorityQueue priority_queue;
 
-        
-    for (int u = 0; u < static_cast<int>(candidate_set.size()); u++) { // loops through each node
-        // loops through candidates to node and their saving
-        for (auto [v, saving_score] : candidate_set[u]) { 
-            if (u > v) { // processes only upper triangle to avoid inserting duplicates 
-                // Inserts (saving_score, u, v) into the priority queue 
-                priority_queue.emplace(saving_score, minPair(u, v));
+            
+        for (int u = 0; u < static_cast<int>(candidate_set.size()); u++) { // loops through each node
+            // loops through candidates to node and their saving
+            for (auto [v, saving_score] : candidate_set[u]) { 
+                if (u > v) { // processes only upper triangle to avoid inserting duplicates 
+                    // Inserts (saving_score, u, v) into the priority queue 
+                    priority_queue.emplace(saving_score, minPair(u, v));
+                }
             }
         }
-    }
 
-    return priority_queue;
+        return priority_queue;
 }
 
 double merge_threshold(
@@ -40,51 +43,50 @@ double merge_threshold(
     double start_threshold = 0.5, 
     double end_threshold = 0.005, 
     double ratio_base = 0.01) {
-    if (current_iteration == num_iterations - 1) {
-        return end_threshold;
-    } 
-    
-    // current_iteration < num_iterations
-    double r = std::pow( ratio_base, 1/(num_iterations - 1));
-    return start_threshold * std::pow(r, current_iteration - 1);
+        if (current_iteration == num_iterations - 1) {
+            return end_threshold;
+        } 
+        
+        // current_iteration < num_iterations
+        double r = std::pow( ratio_base, 1/(num_iterations - 1));
+        return start_threshold * std::pow(r, current_iteration - 1);
 }
 
 void replace(
-    mags::NodeID v,
+    NodeID v,
     SuperNodeSet& super_nodes_set,
-    // TODO: create alias for data types for data types for candidate_set and priority_queue
-    std::vector<phmap::flat_hash_map<int, double>>& candidate_set,
-    phmap::btree_set<std::pair<double, mags::NodePair>, std::greater<>>& priority_queue) {
-    // v is a node to remove, and u is its new representative
-    mags::NodeID u_super = super_nodes_set.get_super_node(v);
+    CandidateSet& candidate_set,
+    PriorityQueue& priority_queue) {
+        // v is a node to remove, and u is its new representative
+        NodeID u_super = super_nodes_set.get_super_node(v);
 
-    for (auto [candidate_node, saving_score] : candidate_set[v]) {
-        // removes invalid candidates (v, candidate_node) from the priority queue and candidate set
-        priority_queue.erase(priority_queue.find({saving_score, minPair(v, candidate_node)}));
+        for (auto [candidate_node, saving_score] : candidate_set[v]) {
+            // removes invalid candidates (v, candidate_node) from the priority queue and candidate set
+            priority_queue.erase(priority_queue.find({saving_score, minPair(v, candidate_node)}));
 
-        // for all candidate_nodes, remove the invalid node v as a candidate
-        candidate_set[candidate_node].erase(v);
+            // for all candidate_nodes, remove the invalid node v as a candidate
+            candidate_set[candidate_node].erase(v);
 
-        if (candidate_node == u_super) continue;
+            if (candidate_node == u_super) continue;
 
 
-        if (!candidate_set[u_super].contains(candidate_node)) {
-            // inserts placeholders into the candidate set and the priority queue
-            // necessary to always keep every candidate pair in the candidate set and priority queue 
-            candidate_set[u_super][candidate_node] = candidate_set[candidate_node][u_super] = -1;
-            priority_queue.emplace( -1, minPair(u_super, candidate_node));
+            if (!candidate_set[u_super].contains(candidate_node)) {
+                // inserts placeholders into the candidate set and the priority queue
+                // necessary to always keep every candidate pair in the candidate set and priority queue 
+                candidate_set[u_super][candidate_node] = candidate_set[candidate_node][u_super] = -1;
+                priority_queue.emplace( -1, minPair(u_super, candidate_node));
+            }
         }
-    }
-    // removes node v from the candidate set
-    candidate_set[v].clear();
+        // removes node v from the candidate set
+        candidate_set[v].clear();
 }
 
 void evaluate(
-    mags::NodeID u,
-    mags::NodeID v, 
+    NodeID u,
+    NodeID v, 
     SuperNodeSet& super_nodes_set,
-    std::vector<phmap::flat_hash_map<int, double>>& candidate_set,
-    std::vector<mags::NodeID>& to_remove_suv, 
+    CandidateSet& candidate_set,
+    std::vector<NodeID>& to_remove_suv, 
     std::vector<std::pair<int, double>>& to_update_suv,
     double threshold_new_saving_score = -0.03) {
         // compute new saving
@@ -102,24 +104,24 @@ void evaluate(
 }
 
 void remove_candidate_v(
-    mags::NodeID u, 
-    mags::NodeID v,
-    std::vector<phmap::flat_hash_map<int, double>>& candidate_set,
-    phmap::btree_set<std::pair<double, mags::NodePair>, std::greater<>>& priority_queue) {
-    // removes the entry (suv(u, v), u, v) from the priority queue
-    priority_queue.erase(priority_queue.find({candidate_set[u][v], minPair(u,v)}));
-    // removes v as a candidate for u
-    candidate_set[u].erase(v);
-    // delete symmetric entry
-    candidate_set[v].erase(u);
+    NodeID u, 
+    NodeID v,
+    CandidateSet& candidate_set,
+    PriorityQueue& priority_queue) {
+        // removes the entry (suv(u, v), u, v) from the priority queue
+        priority_queue.erase(priority_queue.find({candidate_set[u][v], minPair(u,v)}));
+        // removes v as a candidate for u
+        candidate_set[u].erase(v);
+        // delete symmetric entry
+        candidate_set[v].erase(u);
 }
 
 void update_candidate_v(
-    mags::NodeID u, 
-    mags::NodeID v,
+    NodeID u, 
+    NodeID v,
     double saving_score,
-    std::vector<phmap::flat_hash_map<int, double>>& candidate_set,
-    phmap::btree_set<std::pair<double, mags::NodePair>, std::greater<>>& priority_queue) {
+    CandidateSet& candidate_set,
+    PriorityQueue& priority_queue) {
         // the update loop over u has previous updated candidate_set[u][v], ensures that the saving score is the same in both directions
         candidate_set[v][u] = candidate_set[u][v];
         // erase the old entry with the old out-of-date saving score from the priority queue
@@ -128,10 +130,10 @@ void update_candidate_v(
         priority_queue.insert({candidate_set[u][v], minPair(u, v)});
 }
 
-SuperNodeSet merge(
-    mags::Graph const& graph, 
+SuperNodeSet greedy_merge(
+    Graph const& graph, 
     int num_iterations,
-    std::vector<phmap::flat_hash_map<int, double>> candidate_set, 
+    CandidateSet& candidate_set, 
     double start_threshold = 0.5, 
     double end_threshold = 0.005, 
     double ratio_base = 0.01,
@@ -141,12 +143,12 @@ SuperNodeSet merge(
     SuperNodeSet super_nodes_set(graph);
     // Line 2: Create a priority queue for the candidate nodes. 
     // The priority queue should have the format (s(u, v), u, v)
-    phmap::btree_set<std::pair<double, mags::NodePair>, std::greater<>> priority_queue = get_priority_queue(candidate_set, super_nodes_set);
+    PriorityQueue priority_queue = get_priority_queue(candidate_set, super_nodes_set);
     
     // Line 3: Loops over all iterations 
     for (int i = 0; i < num_iterations; i++) {
-        std::vector<mags::NodeID> batch_to_remove;
-        phmap::flat_hash_set<mags::NodeID> batch_to_update; // set containg unique nodes and their neighbors
+        std::vector<NodeID> batch_to_remove;
+        phmap::flat_hash_set<NodeID> batch_to_update; // set containg unique nodes and their neighbors
 
         // Line 4: Loops through the priority queue, by processing the elements with highest saving first
         for (const auto& [s, node_pair] : priority_queue) {
@@ -169,13 +171,13 @@ SuperNodeSet merge(
             }
         }
         // Line 8: Replaces u and v by w in candidate set and priority queue
-        for (mags::NodeID v : batch_to_remove) {
+        for (NodeID v : batch_to_remove) {
             replace(v, super_nodes_set, candidate_set, priority_queue);
         }
         
         // Line 9: Define a set of nodes that include the newly merged node w and w's neighborhood
-        phmap::flat_hash_set<mags::NodeID> neighbors;
-        for (mags::NodeID w : batch_to_update) {
+        phmap::flat_hash_set<NodeID> neighbors;
+        for (NodeID w : batch_to_update) {
             if (super_nodes_set.get_super_node(w) != w) continue; // only for saftely: if w not is the current super node, then skip
             for (auto [nbr, _] : super_nodes_set.get_neighbor_edge_counts(w)) {
                 neighbors.insert(nbr);
@@ -184,8 +186,8 @@ SuperNodeSet merge(
         batch_to_update.merge(neighbors);
 
         // Line 10: Loops over all nodes in the set of nodes defined in Line 9
-        for (const mags::NodeID& u : batch_to_update) {
-            std::vector<mags::NodeID> to_remove_suv;
+        for (const NodeID& u : batch_to_update) {
+            std::vector<NodeID> to_remove_suv;
             std::vector<std::pair<int, double>> to_update_suv; 
 
             // Line 11: Loops over canidate pairs in the candidate set containing the node in Line 10 

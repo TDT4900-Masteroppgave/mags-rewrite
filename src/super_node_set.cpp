@@ -1,7 +1,9 @@
 #include "mags/types.h"
 #include "mags/super_node_set.h"
 
-SuperNodeSet::SuperNodeSet(mags::Graph graph) 
+using namespace mags;
+
+SuperNodeSet::SuperNodeSet(Graph graph) 
 : super_nodes(graph.size(), 0)
 , num_vertices(graph.size(), 1) // each supernode starts by containing only one vertex 
 {
@@ -23,25 +25,25 @@ SuperNodeSet::SuperNodeSet(mags::Graph graph)
     }
 }
 
-mags::NodeID SuperNodeSet::get_super_node(mags::NodeID x) {
+NodeID SuperNodeSet::get_super_node(NodeID x) {
     return (x == super_nodes[x]) ? x : (super_nodes[x] == get_super_node(super_nodes[x]));
 }
 
-int SuperNodeSet::get_num_vertices(mags::NodeID x) {
-    mags::NodeID super_node = get_super_node(x);
+int SuperNodeSet::get_num_vertices(NodeID x) {
+    NodeID super_node = get_super_node(x);
     
     return num_vertices[super_node];
 }
 
-phmap::flat_hash_map<int, int> SuperNodeSet::get_neighbor_edge_counts(mags::NodeID x) {
-    mags::NodeID u_super = get_super_node(x);
+phmap::flat_hash_map<int, int> SuperNodeSet::get_neighbor_edge_counts(NodeID x) {
+    NodeID u_super = get_super_node(x);
     
     return neighbor_edge_counts[u_super];
 }
 
-phmap::flat_hash_map<int, int> SuperNodeSet::get_neighbor_edge_counts(mags::NodeID u, mags::NodeID v) {
-    mags::NodeID u_super = get_super_node(u);
-    mags::NodeID v_super = get_super_node(v);
+phmap::flat_hash_map<int, int> SuperNodeSet::get_neighbor_edge_counts(NodeID u, NodeID v) {
+    NodeID u_super = get_super_node(u);
+    NodeID v_super = get_super_node(v);
     
     // initializes the edge counts for w to the edge counts for u
     phmap::flat_hash_map<int, int> w_neighbor_edge_counts = get_neighbor_edge_counts(u_super);
@@ -61,12 +63,12 @@ phmap::flat_hash_map<int, int> SuperNodeSet::get_neighbor_edge_counts(mags::Node
     return w_neighbor_edge_counts;
 }
 
-int SuperNodeSet::get_unique_edges(mags::NodeID u, mags::NodeID v, int raw_edges) {
+int SuperNodeSet::get_unique_edges(NodeID u, NodeID v, int num_raw_edges) {
     // if u == v, each edge inside the same component is seen from both endpoints
-    return (u == v) ? (raw_edges / 2) : raw_edges;
+    return (u == v) ? (num_raw_edges / 2) : num_raw_edges;
 }
 
-int SuperNodeSet::get_cartesian_product(mags::NodeID u, mags::NodeID v, int num_vertices_u, int num_vertices_v) {
+int SuperNodeSet::get_cartesian_product(NodeID u, NodeID v, int num_vertices_u, int num_vertices_v) {
     /*
         Getter for the cartesian product between two nodes.
         The cartesian product between two nodes corresponds to all possible combinations of edges. 
@@ -81,7 +83,7 @@ int SuperNodeSet::get_cartesian_product(mags::NodeID u, mags::NodeID v, int num_
     }
 }
 
-double SuperNodeSet::accumulate_cost(mags::NodeID u, int num_vertices_u, const phmap::flat_hash_map<int, int> &neighbor_edge_counts) {
+double SuperNodeSet::accumulate_cost(NodeID u, int num_vertices_u, const phmap::flat_hash_map<int, int> &neighbor_edge_counts) {
     double total_cost = 0.0;
 
     // iterates over a map containing neighbors to the node and the number of edges between the node and the neighbor 
@@ -95,11 +97,11 @@ double SuperNodeSet::accumulate_cost(mags::NodeID u, int num_vertices_u, const p
     return total_cost;
 }
 
-double SuperNodeSet::get_cost(mags::NodeID u) {
+double SuperNodeSet::get_cost(NodeID u) {
     return accumulate_cost(u, get_num_vertices(u),  get_neighbor_edge_counts(u));
 }
 
-double SuperNodeSet::get_merge_cost(mags::NodeID u, mags::NodeID v) {
+double SuperNodeSet::get_merge_cost(NodeID u, NodeID v) {
     /*
         Getter for the accuumulated cost for merging node u and v. 
         merged_neighbor_edge_counts is the union of the neighborhood to u and v. 
@@ -110,7 +112,7 @@ double SuperNodeSet::get_merge_cost(mags::NodeID u, mags::NodeID v) {
     return accumulate_cost(u, merged_num_vertices,  get_neighbor_edge_counts(u, v));
 }
 
-double SuperNodeSet::saving(mags::NodeID u, mags::NodeID v) {
+double SuperNodeSet::saving(NodeID u, NodeID v) {
     double c_u = get_cost(u);
     double c_v = get_cost(v);
     double c_w = get_merge_cost(u, v);
@@ -118,7 +120,7 @@ double SuperNodeSet::saving(mags::NodeID u, mags::NodeID v) {
     return (c_u + c_v - c_w) / (c_u + c_v);
 }
 
-void SuperNodeSet::update_neighbor_edge_counts(mags::NodeID u_super, mags::NodeID v_super) {
+void SuperNodeSet::update_neighbor_edge_counts(NodeID u_super, NodeID v_super) {
     // delete v as neighbor
     for (auto [nbr, num_nbr_edges] : neighbor_edge_counts[v_super]) {
         neighbor_edge_counts[nbr].erase(v_super);
@@ -139,9 +141,9 @@ void SuperNodeSet::update_neighbor_edge_counts(mags::NodeID u_super, mags::NodeI
     }
 }
 
-void SuperNodeSet::merge(mags::NodeID u, mags::NodeID v) {
-    mags::NodeID u_super = get_super_node(u);
-    mags::NodeID v_super = get_super_node(v);
+void SuperNodeSet::merge(NodeID u, NodeID v) {
+    NodeID u_super = get_super_node(u);
+    NodeID v_super = get_super_node(v);
 
     if (u_super != v_super) {
         // merges u and v by setting them to refer to the same vertex
