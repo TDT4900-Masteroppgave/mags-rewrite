@@ -26,7 +26,11 @@ SuperNodeSet::SuperNodeSet(Graph graph)
 }
 
 NodeID SuperNodeSet::get_super_node(NodeID x) {
-    return (x == super_nodes[x]) ? x : (super_nodes[x] == get_super_node(super_nodes[x]));
+    if(super_nodes[x] != x) {
+        super_nodes[x] = get_super_node(super_nodes[x]);
+    }
+
+    return super_nodes[x];
 }
 
 int SuperNodeSet::get_num_vertices(NodeID x) {
@@ -52,7 +56,7 @@ phmap::flat_hash_map<int, int> SuperNodeSet::get_neighbor_edge_counts(NodeID u, 
     for (const auto& [nbr, num_nbr_edges] : get_neighbor_edge_counts(v_super)) {
         w_neighbor_edge_counts[nbr] += num_nbr_edges;
     }
-
+    
     // Handles edges that used to exist between u and v. 
     if (w_neighbor_edge_counts.contains(v_super)) {
         // stores all edges between u and v in the entry u i.e. as internal edges
@@ -91,9 +95,10 @@ double SuperNodeSet::accumulate_cost(NodeID u, int num_vertices_u, const phmap::
         const int cartesian_product = get_cartesian_product(u, neighbor, num_vertices_u, get_num_vertices(neighbor));
         const int unique_nbr_edges  = get_unique_edges(u, neighbor, num_nbr_edges);
 
+        // cart = 1, unique = 1, min(1-1+1=1, 1)=1
         total_cost += std::min(cartesian_product - unique_nbr_edges + 1, unique_nbr_edges);
     }
-
+    
     return total_cost;
 }
 
@@ -121,18 +126,20 @@ double SuperNodeSet::saving(NodeID u, NodeID v) {
 }
 
 void SuperNodeSet::update_neighbor_edge_counts(NodeID u_super, NodeID v_super) {
+    // update the edge count to the merged node w (stored in u)
+    // TODO: this step can be optimized because the saving step has already performed the same calculation. 
+    
+    phmap::flat_hash_map<int, int> w_neighbor_edge_counts = get_neighbor_edge_counts(u_super, v_super); 
+    neighbor_edge_counts[u_super] = w_neighbor_edge_counts;
+    
     // delete v as neighbor
     for (auto [nbr, num_nbr_edges] : neighbor_edge_counts[v_super]) {
         neighbor_edge_counts[nbr].erase(v_super);
     }
+    
     // delete v as an entry 
     neighbor_edge_counts[v_super].clear();
-
-    // update the edge count to the merged node w (stored in u)
-    // TODO: this step can be optimized because the saving step has already performed the same calculation. 
-    phmap::flat_hash_map<int, int> w_neighbor_edge_counts = get_neighbor_edge_counts(u_super, v_super); 
-    neighbor_edge_counts[u_super] = w_neighbor_edge_counts;
-
+    
     // update the edge count where w (stored in u) is a nbr
     for (auto [nbr, num_nbr_edges] : w_neighbor_edge_counts) {
         if (nbr != u_super) {
@@ -146,16 +153,15 @@ void SuperNodeSet::merge(NodeID u, NodeID v) {
     NodeID v_super = get_super_node(v);
 
     if (u_super != v_super) {
-        // merges u and v by setting them to refer to the same vertex
-        super_nodes[v_super] = u_super;
+        // replaces u and v in neigbour_edge_counts to w
+        update_neighbor_edge_counts(u, v);
         
         // update the number of vertices
         // does not erase v_super from num_vertices to keep the index correct in respect to the nodes indecies
         // moreover, when using get_super_node(v) we will now get u. Hence, the value in num_vertices[v] are never used
         num_vertices[u_super] += num_vertices[v_super];
-
-        // replaces u and v in neigbour_edge_counts to w
-        // TODO: test if this logic is correct, because v is already set to be the super node u. It is possible that v does not contain anything or already refers to u
-        update_neighbor_edge_counts(u, v);
+        
+        // merges u and v by setting them to refer to the same vertex
+        super_nodes[v_super] = u_super;
     }
 }

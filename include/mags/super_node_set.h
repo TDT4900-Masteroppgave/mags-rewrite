@@ -10,6 +10,12 @@
 #include <parallel_hashmap/phmap.h>
 #include <parallel_hashmap/btree.h>
 
+
+#ifdef UNIT_TESTING
+  #include <gtest/gtest_prod.h>
+#endif
+
+
 using namespace mags;
 
 class SuperNodeSet {
@@ -19,7 +25,7 @@ class SuperNodeSet {
 
     public:
         SuperNodeSet(Graph);
-        
+
         NodeID get_super_node(NodeID x);
         int get_num_vertices(NodeID x);
         phmap::flat_hash_map<int, int> get_neighbor_edge_counts(NodeID x);
@@ -27,7 +33,7 @@ class SuperNodeSet {
         int get_cartesian_product(NodeID u, NodeID v, int u_edges, int v_edges);
         double get_cost(NodeID u);
         double get_merge_cost(NodeID u, NodeID v);
-        
+
         void merge(NodeID u, NodeID v);
         double saving(NodeID u, NodeID v);
 
@@ -35,5 +41,17 @@ class SuperNodeSet {
         int get_unique_edges(NodeID u, NodeID v, int num_raw_edges);
         double accumulate_cost(NodeID u, int num_vertices_u, const phmap::flat_hash_map<int, int> &neighbor_edge_counts); 
         void update_neighbor_edge_counts(NodeID u, NodeID v);
+
+
+    #ifdef UNIT_TESTING
+        FRIEND_TEST(SuperNodeSetTest, UniqueEdges_SameNodeHalves);
+        FRIEND_TEST(SuperNodeSetTest, UniqueEdges_DifferentNodesUnchanged);
+        
+        FRIEND_TEST(SuperNodeSetTest, AccumulateCost_WithInternalEdges);
+        FRIEND_TEST(SuperNodeSetTest, AccumulateCost_NoInternalEdges);
+        
+        FRIEND_TEST(SuperNodeSetTest, UpdateNeighborEdgeCounts_Basic);
+        FRIEND_TEST(SuperNodeSetTest, UpdateNeighborEdgeCounts_WithSharedNbrs);
+    #endif
 };
 #endif // MAGS_REWRITE_SUPER_NODE_SET_H
