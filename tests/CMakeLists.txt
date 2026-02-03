@@ -16,6 +16,7 @@ add_executable(mags_tests
         DisjointSetUnionTest.cpp
         PartitionTest.cpp
         output_test.cpp
+        preprocess_test.cpp
 )
 
 target_link_libraries(mags_tests
