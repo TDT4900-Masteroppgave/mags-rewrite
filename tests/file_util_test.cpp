@@ -2,6 +2,7 @@
 #include "mags/types.h"
 
 #include <fstream>
+#include <filesystem>
 #include <gtest/gtest.h>
 
 namespace mags::io::test {
