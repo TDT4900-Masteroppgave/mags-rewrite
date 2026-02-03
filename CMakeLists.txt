@@ -15,6 +15,7 @@ set(MAGS_LOGIC_SOURCES
         src/util.cpp
         src/DisjointSetUnion.cpp
         src/Partition.cpp
+        src/output.cpp
 )
 
 set(MAGS_LOGIC_HEADERS
@@ -23,6 +24,7 @@ set(MAGS_LOGIC_HEADERS
         include/mags/util.h
         include/mags/DisjointSetUnion.h
         include/mags/Partition.h
+        include/mags/output.h
 )
 add_library(mags_logic ${MAGS_LOGIC_SOURCES} ${MAGS_LOGIC_HEADERS})
 target_include_directories(mags_logic PUBLIC include)
