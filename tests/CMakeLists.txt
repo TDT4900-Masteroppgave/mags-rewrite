@@ -17,6 +17,9 @@ add_executable(mags_tests
         PartitionTest.cpp
         super_node_set_test.cpp
         greedy_merge_test.cpp
+        output_test.cpp
+        preprocess_test.cpp
+        file_util_test.cpp
 )
 
 target_link_libraries(mags_tests
@@ -25,8 +28,6 @@ target_link_libraries(mags_tests
         GTest::gtest_main
         GTest::gtest
 )
-
-target_compile_definitions(mags_logic PUBLIC UNIT_TESTING)
 
 include(GoogleTest)
 gtest_discover_tests(mags_tests)

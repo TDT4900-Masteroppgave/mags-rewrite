@@ -22,6 +22,9 @@ set(MAGS_LOGIC_SOURCES
     src/super_node_set.cpp
     src/types.cpp
     src/greedy_merge.cpp
+    src/output.cpp
+    src/preprocess.cpp
+    src/file_util.cpp
 )
 
 set(MAGS_LOGIC_HEADERS
@@ -32,9 +35,13 @@ set(MAGS_LOGIC_HEADERS
     include/mags/Partition.h
     include/mags/super_node_set.h
     include/mags/greedy_merge.h
+    include/mags/output.h
+    include/mags/preprocess.h
+    include/mags/file_util.h
 )
 
 add_library(mags_logic ${MAGS_LOGIC_SOURCES} ${MAGS_LOGIC_HEADERS})
+target_include_directories(mags_logic PUBLIC include)
 
 # Expose your public headers as <mags/...>
 target_include_directories(mags_logic PUBLIC

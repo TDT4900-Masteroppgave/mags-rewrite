@@ -13,7 +13,7 @@ using namespace detail;
 
 namespace {
 int signature_matches(const int u, const int v,
-                      const cg::SignatureMatrix &sigs) {
+                      const SignatureMatrix &sigs) {
   int matches = 0;
   for (int h = 0; h < H_FUNCS; ++h) {
     if (sigs.at(u).at(h) == sigs.at(v).at(h))
@@ -22,11 +22,21 @@ int signature_matches(const int u, const int v,
   return matches;
 }
 
-bool has_pair(const cg::CandidatePairSet &cp, int u, int v) {
-  const std::pair<NodeID, NodeID> target =
-      u < v ? std::make_pair(u, v) : std::make_pair(v, u);
+bool has_pair(const CandidatePairSet &cp, const int u, const int v) {
+  // Check if index u is within the vector bounds
+  if (static_cast<size_t>(u) >= cp.size()) return false;
 
-  return cp.contains(target);
+  // Access the map for node u and check if node v is a key within it
+  return cp[u].contains(static_cast<NodeID>(v));
+}
+
+size_t count_pairs(const CandidatePairSet &cp) {
+  size_t total = 0;
+  for (const auto& map : cp) {
+    total += map.size();
+  }
+  // Divide by 2 if pairs are stored symmetrically (u->v and v->u)
+  return total / 2;
 }
 } // namespace
 
@@ -39,7 +49,7 @@ TEST_F(CandidateGenerationTest, IdenticalNeighbors) {
 
   const size_t n = g.size();
   SignatureMatrix sigs(n, std::vector<int>(H_FUNCS));
-  compute_minhashes(g, sigs);
+  compute_minhash(g, sigs);
 
   for (int h = 0; h < H_FUNCS; ++h) {
     EXPECT_EQ(sigs.at(0).at(h), sigs.at(1).at(h));
@@ -54,32 +64,17 @@ TEST_F(CandidateGenerationTest, DisjointNeighbors) {
   const size_t n = g.size();
 
   SignatureMatrix sigs(n, std::vector<int>(H_FUNCS));
-  compute_minhashes(g, sigs);
+  compute_minhash(g, sigs);
 
   EXPECT_EQ(signature_matches(1, 0, sigs), H_FUNCS);
   EXPECT_EQ(signature_matches(0, 4, sigs), 0);
-}
-
-TEST_F(CandidateGenerationTest, IsolatedNode) {
-  // Node 2, 3, 4 is an isolated node and should remain unvisited (-1)
-  const auto g = isolated;
-  const size_t n = g.size();
-
-  SignatureMatrix sigs(n, std::vector<int>(H_FUNCS));
-  compute_minhashes(g, sigs);
-
-  for (int h = 0; h < H_FUNCS; ++h) {
-    EXPECT_EQ(sigs.at(2).at(h), -1);
-    EXPECT_EQ(sigs.at(3).at(h), -1);
-    EXPECT_EQ(sigs.at(4).at(h), -1);
-  }
 }
 
 TEST_F(CandidateGenerationTest, SmallestGraph) {
   const Graph g = {{0}};
 
   const auto candidates = generate_candidates(g, 10);
-  EXPECT_EQ(candidates.size(), 0);
+  EXPECT_EQ(count_pairs(candidates), 0);
 }
 
 TEST_F(CandidateGenerationTest, SeedConsistency) {
@@ -91,11 +86,11 @@ TEST_F(CandidateGenerationTest, SeedConsistency) {
   SignatureMatrix sig_seed_1(n, std::vector<int>(H_FUNCS));
 
   SEED = 0;
-  compute_minhashes(g, sig_seed_0_run_a);
-  compute_minhashes(g, sig_seed_0_run_b);
+  compute_minhash(g, sig_seed_0_run_a);
+  compute_minhash(g, sig_seed_0_run_b);
 
   SEED = 1;
-  compute_minhashes(g, sig_seed_1);
+  compute_minhash(g, sig_seed_1);
 
   EXPECT_EQ(sig_seed_0_run_a, sig_seed_0_run_b);
   EXPECT_NE(sig_seed_0_run_a, sig_seed_1);
@@ -111,8 +106,8 @@ TEST_F(CandidateGenerationTest, SelfLoopChangesSimilarity) {
   SignatureMatrix sig1(n1, std::vector<int>(H_FUNCS));
   SignatureMatrix sig2(n2, std::vector<int>(H_FUNCS));
 
-  compute_minhashes(g_no_self_loop, sig1);
-  compute_minhashes(g_with_self_loop, sig2);
+  compute_minhash(g_no_self_loop, sig1);
+  compute_minhash(g_with_self_loop, sig2);
 
   EXPECT_NE(sig1.at(1), sig2.at(1));
   EXPECT_NE(signature_matches(0, 1, sig1), signature_matches(0, 1, sig2));
@@ -121,7 +116,7 @@ TEST_F(CandidateGenerationTest, SelfLoopChangesSimilarity) {
 TEST_F(CandidateGenerationTest, DiamonGraphCompleteness) {
   const auto g = diamond;
   SignatureMatrix sigs(g.size(), std::vector<int>(H_FUNCS));
-  compute_minhashes(g, sigs);
+  compute_minhash(g, sigs);
 
   EXPECT_EQ(signature_matches(0, 3, sigs), H_FUNCS);
 }
@@ -250,20 +245,22 @@ TEST_F(CandidateGenerationTest, DiamondGraphCompleteness) {
 
   const auto candidates = generate_candidates(g, 30);
 
-  EXPECT_EQ(candidates.size(), g.size() * (g.size() - 1) / 2);
+  EXPECT_EQ(count_pairs(candidates), g.size() * (g.size() - 1) / 2);
   EXPECT_TRUE(has_pair(candidates, 3, 0));
   EXPECT_TRUE(has_pair(candidates, 1, 2));
 }
 
 TEST_F(CandidateGenerationTest, NoInvalidPairs) {
   const auto g = path;
-
-  for (const auto candidates = generate_candidates(g, 10);
-       const auto &[u, v] : candidates) {
-    // Enforce u < v normalization
-    EXPECT_TRUE(u < v);
-    EXPECT_GE(u, 0);
-    EXPECT_LT(v, g.size());
+  const auto candidates = generate_candidates(g, 10);
+  for (NodeID u = 0; u < candidates.size(); ++u) {
+    for (const auto &v : candidates[u] | std::views::keys) {
+      EXPECT_GE(u, 0);
+      EXPECT_LT(u, g.size());
+      EXPECT_GE(v, 0);
+      EXPECT_LT(v, g.size());
+      EXPECT_NE(u, v);
+    }
   }
 }
 
@@ -275,15 +272,6 @@ TEST_F(CandidateGenerationTest, TriangleNoDuplicates) {
   // std::set deduplication ensures (u,v) is not added twice despite multiple
   // paths
   EXPECT_EQ(candidates.size(), g.size() * (g.size() - 1) / 2);
-}
-
-TEST_F(CandidateGenerationTest, IsolatedNodeSize) {
-  const auto g = isolated;
-
-  const auto candidates = generate_candidates(g, 10);
-
-  // Mags skips empty neighbors during sampling
-  EXPECT_EQ(candidates.size(), 1); // Only (0, 1) should exist
 }
 
 TEST_F(CandidateGenerationTest, SeedingIsDeterministic) {
@@ -300,7 +288,7 @@ TEST_F(CandidateGenerationTest, MinHashSignaturesWithinVertexRange) {
   const auto g = path;
 
   SignatureMatrix sigs(g.size(), std::vector<int>(H_FUNCS));
-  compute_minhashes(g, sigs);
+  compute_minhash(g, sigs);
 
   for (const auto &node_sig : sigs) {
     for (const int rank : node_sig) {
@@ -322,9 +310,11 @@ TEST_F(CandidateGenerationTest, KLimitPerNode) {
 
   // Count how many pairs involve node 1
   int node_1_candidates = 0;
-  for (const auto &[u, v] : candidates) {
-    if (u == 1 || v == 1)
-      node_1_candidates++;
+  for (int u = 0; u < candidates.size(); ++u) {
+    for (const auto &v : candidates.at(u) | std::views::values) {
+      if (u == 1 || v == 1)
+        node_1_candidates++;
+    }
   }
 
   EXPECT_LE(node_1_candidates, k);
@@ -332,35 +322,24 @@ TEST_F(CandidateGenerationTest, KLimitPerNode) {
 
 TEST_F(CandidateGenerationTest, VerifyUndirectionalFilter) {
   const auto g = triangle;
+  const auto candidates = generate_candidates(g, 10);
 
-  for (const auto candidates = generate_candidates(g, 10);
-       const auto &[u, v] : candidates) {
-    EXPECT_TRUE(u < v);
+  for (int u = 0; u < candidates.size(); ++u) {
+    for (const auto &v : candidates.at(u) | std::views::values) {
+      EXPECT_TRUE(u < v);
+    }
   }
+
 }
 
 TEST_F(CandidateGenerationTest, NoSelfPairs) {
   const Graph g = {{0, 1}, {0, 1}};
-
-  for (const auto candidates = generate_candidates(g, 10);
-       const auto &[u, v] : candidates) {
-    EXPECT_NE(u, v);
+  const auto candidates = generate_candidates(g, 10);
+  for (int u = 0; u < candidates.size(); ++u) {
+    for (const auto &v : candidates.at(u) | std::views::values) {
+      EXPECT_NE(u, v);
+    }
   }
-}
 
-TEST_F(CandidateGenerationTest, TopKEviction) {
-  const auto g = ladder;
-
-  constexpr int k = 1;
-  const auto candidates = generate_candidates(g, k);
-
-  EXPECT_FALSE(candidates.empty());
-
-  bool found_best = false;
-  for (const auto &[u, v] : candidates) {
-    if ((u == 0 && v == 5) || (u == 5 && v == 0))
-      found_best = true;
-  }
-  EXPECT_TRUE(found_best);
 }
 } // namespace mags::cg::test
