@@ -42,12 +42,12 @@ namespace mags::gm {
             double start_threshold = 0.5, 
             double end_threshold = 0.005, 
             double ratio_base = 0.01) {
-                if (current_iteration == num_iterations - 1) {
+                if (current_iteration == num_iterations) {
                     return end_threshold;
                 } 
                 
                 // current_iteration < num_iterations
-                double r = std::pow( ratio_base, 1/(num_iterations - 1));
+                double r = std::pow( ratio_base, 1.0/(num_iterations - 1));
                 return start_threshold * std::pow(r, current_iteration - 1);
         }
     
@@ -61,7 +61,6 @@ namespace mags::gm {
                 NodeID u_super = super_nodes_set.get_super_node(v);
                 
                 for (auto [candidate_node, saving_score] : candidate_set[v]) {
-                    // candidate node = 2, saving_score = 0.4
                     // removes invalid candidates (v, candidate_node) from the priority queue and candidate set
                     priority_queue.erase(priority_queue.find({saving_score, minPair(v, candidate_node)}));
                     
@@ -147,7 +146,7 @@ namespace mags::gm {
         PriorityQueue priority_queue = detail::get_priority_queue(candidate_set);
         
         // Line 3: Loops over all iterations 
-        for (int i = 0; i < num_iterations; i++) {
+        for (int i = 1; i <= num_iterations; i++) {
             std::vector<NodeID> batch_to_remove;
             phmap::flat_hash_set<NodeID> batch_to_update; // set containing unique nodes and their neighbors
 
@@ -184,6 +183,7 @@ namespace mags::gm {
                     neighbors.insert(nbr);
                 }
             }
+            // creates a union set of batch_to_update and neighbors
             batch_to_update.merge(neighbors);
 
             // Line 10: Loops over all nodes in the set of nodes defined in Line 9

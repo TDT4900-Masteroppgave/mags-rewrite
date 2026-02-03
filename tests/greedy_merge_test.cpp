@@ -1,5 +1,9 @@
 #include <gtest/gtest.h>
+#include <iterator>
 #include <mags/greedy_merge.h>
+#include <cmath>
+#include <limits>
+#include <vector>
 
 // Include the header where get_priority_queue, CandidateSet, PriorityQueue, minPair are declared.
 
@@ -213,7 +217,7 @@ namespace mags::gm::test {
         EXPECT_TRUE(cs[0].contains(2));
         EXPECT_TRUE(cs[2].contains(0));
         EXPECT_DOUBLE_EQ(cs[0][2], -1.0);               
-        EXPECT_DOUBLE_EQ(cs[2][0], -1.0);              
+        EXPECT_DOUBLE_EQ(cs[2][0], -1.0);      
     }
 
     TEST(GreedyMergeTest, Evaluate_NewSavingStoredAndOldPushed) {
@@ -375,5 +379,376 @@ namespace mags::gm::test {
 
         // Assert: unrelated entries are untouched
         EXPECT_EQ(pq.count({0.50, minPair(2, 1)}), 1u);
+    }
+
+    TEST(GreedyMergeTest, MergeThreshold_DefaultSchedule) {
+        const double tolerance = 1e-12;
+        const int T = 50;
+        // First iteration should be start threshold (0.5)
+        EXPECT_NEAR(merge_threshold(1, T), 0.5, tolerance);
+        // Last iteration should be end threshold (0.005)
+        EXPECT_NEAR(merge_threshold(T, T), 0.005, tolerance);
+    }
+
+    TEST(GreedyMergeTest, MergeThreshold_KnownValues) {
+        const double tolerance = 1e-3;
+        const int T = 50;
+        const double start = 0.5;
+        const double end   = 0.005;
+        const double ratio_base = end / start; // 0.01
+
+        EXPECT_NEAR(merge_threshold(1, T, start, end, ratio_base), start, tolerance);
+        EXPECT_NEAR(merge_threshold(T, T, start, end, ratio_base), end,   tolerance);
+        EXPECT_NEAR(merge_threshold(2, T, start, end, ratio_base), 0.455, tolerance);
+        EXPECT_NEAR(merge_threshold(3, T, start, end, ratio_base), 0.414, tolerance);
+    }
+
+    TEST(GreedyMergeTest, MergeThreshold_SingleIteration) {
+        EXPECT_DOUBLE_EQ(merge_threshold(/*i=*/1, /*T=*/1), 0.005);
+    }
+
+    TEST(GreedyMergeTest,  MergeThreshold_TwoIterations_EndpointsOnly) {
+        EXPECT_DOUBLE_EQ(merge_threshold(1, 2), 0.5);
+        EXPECT_DOUBLE_EQ(merge_threshold(2, 2), 0.005);
+    }
+
+    TEST(GreedyMergeTest, MergeThreshold_MonotoneDecreasing) {
+        const int T = 20;
+        for (int i = 1; i < T; ++i) {
+            const double a = merge_threshold(i,   T);
+            const double b = merge_threshold(i+1, T);
+            EXPECT_GT(a, b) << "Thresholds must strictly decrease for default params; i=" << i;
+        }
+    }
+
+    TEST(GreedyMergeTest, GreedyMerge_MergesOnThreshold) {
+        // Graph: 0--2--1
+        const Graph g = {
+            {2},    // 0
+            {2},    // 1
+            {0,1}   // 2
+        };
+
+        CandidateSet cs(3);
+        // Candidate pair (0,1) is given a previous saving >= default end-threshold.
+        cs[0][1] = 0.5; 
+        cs[1][0] = 0.5;
+
+        // One iteration -> threshold used internally equals default end_threshold (0.005).
+        SuperNodeSet sns = greedy_merge(g,
+                                        /*num_iterations=*/1,
+                                        cs /*by-ref*/);
+
+        // Expect merge of 0 and 1; representative is the smaller ID (u from minPair).
+        EXPECT_EQ(sns.get_super_node(0), sns.get_super_node(1));
+        // Node 2 stays separate.
+        EXPECT_EQ(sns.get_super_node(2), 2);
+    }
+    
+    TEST(GreedyMergeTest, GreedyMerge_SkipsWhenCurrentSavingLow) {
+        // Two disjoint edges: (0--2) and (1--3); 0 and 1 share no common neighbors.
+        const Graph g = {
+            {2},   
+            {3},   
+            {0},   
+            {1}    
+        };
+        
+        CandidateSet cs(4);
+        // Previous score is high, but current saving(0,1) should be approx 0 in this shape.
+        cs[0][1] = 0.9; 
+        cs[1][0] = 0.9;
+        
+        SuperNodeSet sns = greedy_merge(g,
+            /*num_iterations=*/1,
+            cs /*by-ref*/);
+            
+        // No merge is expected.
+        EXPECT_EQ(sns.get_super_node(0), 0);
+        EXPECT_EQ(sns.get_super_node(1), 1);
+        // Sanity: other nodes unchanged.
+        EXPECT_EQ(sns.get_super_node(2), 2);
+        EXPECT_EQ(sns.get_super_node(3), 3);
+    }
+
+    TEST(GreedyMergeTest, GreedyMerge_SingleIteration_MultipleIndependentMerges) {
+        /*
+        Two separate "path-of-3" components:
+        Component A: 0--2--1
+        Component B: 3--5--4
+        Both endpoints in each component should merge when run for one iteration
+        */
+        const Graph g = {
+            {2},      
+            {2},      
+            {0,1},    
+            {5},      
+            {5},      
+            {3,4}     
+        };
+
+        CandidateSet cs(6);
+        // Seed candidate endpoints for both components.
+        cs[0][1] = 0.5; cs[1][0] = 0.5;  // component A
+        cs[3][4] = 0.5; cs[4][3] = 0.5;  // component B
+
+        SuperNodeSet sns = greedy_merge(g,
+                                        /*num_iterations=*/1,
+                                        cs /*by-ref*/);
+
+        // Each component's endpoints should merge
+        EXPECT_EQ(sns.get_super_node(0), sns.get_super_node(1));
+        EXPECT_EQ(sns.get_super_node(3), sns.get_super_node(4));
+
+        // Middle nodes remain as separate super-nodes.
+        EXPECT_EQ(sns.get_super_node(2), 2);
+        EXPECT_EQ(sns.get_super_node(5), 5);
+    }
+
+    TEST(GreedyMergeTest, GreedyMerge_RemovesPlaceholdersAndOldPairs) {
+        // Graph: path 0--2--1
+        const Graph g = {
+            {2},    // 0
+            {2},    // 1
+            {0,1}   // 2
+        };
+
+        CandidateSet cs(3);
+        // Ensure (0,1) will be merged by setting previous saving high.
+        cs[0][1] = 0.8; cs[1][0] = 0.8;
+
+        // Lets (1,2) have a very small previous saving so
+        // it is skipped during (s < merge_threshold), but processed during
+        // replace(...) behavior for v=1.
+        cs[1][2] = 0.001; cs[2][1] = 0.001;
+
+        // Use a very high threshold_new_saving_score so the post-merge evaluation
+        // removes the placeholder (0,2) rather than updating it.
+        SuperNodeSet sns = greedy_merge(
+            g,
+            /*num_iterations=*/1,
+            cs /* by-ref */,
+            /*start_threshold=*/0.5,
+            /*end_threshold=*/0.005,
+            /*ratio_base=*/0.01,
+            /*threshold_new_saving_score=*/1.0
+        );
+
+        // After merge, 0 and 1 must share the same representative (u=0 as minPair).
+        EXPECT_EQ(sns.get_super_node(0), sns.get_super_node(1));
+
+        // Node 2 is still its own super-node.
+        EXPECT_EQ(sns.get_super_node(2), 2);
+
+        // v=1 was removed and cleared by replace(...)
+        EXPECT_FALSE(cs[0].contains(1));
+        EXPECT_FALSE(cs[2].contains(1));
+        EXPECT_TRUE(cs[1].empty());
+
+        // The placeholder (0,2) must be gone because we forced removal.
+        EXPECT_FALSE(cs[0].contains(2));
+        EXPECT_FALSE(cs[2].contains(0));
+
+        // Checks that the candidate set for 0 and 2 also are empty because of the forced removal
+        EXPECT_TRUE(cs[0].empty());
+        EXPECT_TRUE(cs[2].empty());
+        
+        // Build a fresh PQ from the final candidate set to verify there's no old data.
+        PriorityQueue pq_final = get_priority_queue(cs);
+        EXPECT_TRUE(pq_final.empty());
+    }
+
+    TEST(GreedyMergeTest, GreedyMerge_UpdatesScoresFromPlaceholder) {
+        // Graph: path 0--2--1
+        const Graph g = {
+            {2},    
+            {2},    
+            {0,1}   
+        };
+
+        CandidateSet cs(3);
+        // Merge candiate pair
+        cs[0][1] = 0.8; cs[1][0] = 0.8;
+
+        // during replace of v=1, then the candidate pair (1, 2) will be 
+        // considered and it will be created a placeholder between (0, 2) 
+        // because 0 is now the representative for 1 in both PQ and CS
+        cs[1][2] = 0.001; cs[2][1] = 0.001;
+
+        // Run with very low threshold so evaluate(...) updates (0,2) from -1 to a proper score.
+        SuperNodeSet sns = greedy_merge(
+            g,
+            /*num_iterations=*/1,
+            cs /* by-ref */,
+            /*start_threshold=*/0.5,
+            /*end_threshold=*/0.005,
+            /*ratio_base=*/0.01,
+            /*threshold_new_saving_score=*/-10.0
+        );
+
+        // Assert merge
+        EXPECT_EQ(sns.get_super_node(0), sns.get_super_node(1));
+        EXPECT_EQ(sns.get_super_node(2), 2);
+
+        // v=1 cleared and removed from all maps
+        EXPECT_FALSE(cs[0].contains(1));
+        EXPECT_FALSE(cs[2].contains(1));
+        EXPECT_TRUE(cs[1].empty());
+
+        ASSERT_TRUE(cs[0].contains(2));
+        ASSERT_TRUE(cs[2].contains(0));
+        double s02 = cs[0][2];
+        EXPECT_DOUBLE_EQ(cs[2][0], s02);
+        EXPECT_NE(s02, -1.0) << "Placeholder should have been updated to a real saving";
+
+        PriorityQueue pq_final = get_priority_queue(cs);
+        // Expect exactly one undirected pair in the PQ (0,2)
+        ASSERT_EQ(pq_final.size(), 1u);
+        auto it = pq_final.begin();
+        ASSERT_NE(it, pq_final.end());
+        EXPECT_DOUBLE_EQ(it->first, s02);            // updated score propagated to PQ
+        EXPECT_EQ(it->second.first, 0);              // minPair(0,2)
+        EXPECT_EQ(it->second.second, 2);
+    }
+
+    TEST(GreedyMergeTest, GreedyMerge_PositiveSavingCandidatePairAfterOneIteration) {
+        // Star centered at 3:
+        //   0
+        //    \
+        //     3 -- 2
+        //    /
+        //   1
+        const Graph g = {
+            /*0*/ {3},
+            /*1*/ {3},
+            /*2*/ {3},
+            /*3*/ {0,1,2}
+        };
+
+        CandidateSet cs(4);
+        // Make (0,1) the only high-scoring initial candidate so it merges in iter-1
+        cs[0][1] = 0.8; cs[1][0] = 0.8;
+
+        // Ensure replace(...) examines node 2 when removing v=1 so it can create (0,2) placeholder
+        cs[1][2] = 0.001; cs[2][1] = 0.001;
+
+        // One iteration only; set low threshold_new_saving_score so the placeholder gets UPDATED.
+        SuperNodeSet sns = greedy_merge(
+            g,
+            /*num_iterations=*/1,
+            cs /* by-ref */,
+            /*start_threshold=*/0.5,
+            /*end_threshold=*/0.005,
+            /*ratio_base=*/0.01,
+            /*threshold_new_saving_score=*/-10.0
+        );
+
+        // Sanity: (0,1) merged
+        EXPECT_EQ(sns.get_super_node(0), sns.get_super_node(1));
+        
+        ASSERT_TRUE(cs[0].contains(2));
+        EXPECT_DOUBLE_EQ(cs[0][2], cs[2][0]);
+        EXPECT_DOUBLE_EQ(cs[0][2], 0.5);
+    }
+    
+    TEST(GreedyMergeTest, GreedyMerge_MultiIterationSecondMerge) {
+        // Star centered at 3:
+        //   0
+        //    \
+        //     3 -- 2
+        //    /
+        //   1
+        const Graph g = {
+            {3},
+            {3},
+            {3},
+            {0,1,2}
+        };
+
+        CandidateSet cs(4);
+        // Seed only (0,1) so first iteration has exactly one merge candidate.
+        cs[0][1] = 0.8; cs[1][0] = 0.8;
+
+        // during replace of v=1, then the candidate pair (1, 2) will be 
+        // considered and it will be created a placeholder between (0, 2) 
+        // because 0 is now the representative for 1 in both PQ and CS
+        cs[1][2] = 0.001; cs[2][1] = 0.001;
+
+        // Run for two iterations; set threshold_new_saving_score << 0 so placeholders get UPDATED.
+        SuperNodeSet sns = greedy_merge(
+            g,
+            /*num_iterations=*/2,
+            cs,
+            /*start_threshold=*/0.5,
+            /*end_threshold=*/0.005,
+            /*ratio_base=*/0.01,
+            /*threshold_new_saving_score=*/-10.0
+        );
+
+        // Iter 1: expect 0 and 1 merged
+        // Iter 2: expect the merged super(0) to merge with 2
+        EXPECT_EQ(sns.get_super_node(0), sns.get_super_node(1));
+        EXPECT_EQ(sns.get_super_node(0), sns.get_super_node(2));
+
+        // Candidate set should have no pairs left (single super-node)
+        EXPECT_TRUE(cs[0].empty());
+        EXPECT_TRUE(cs[1].empty());
+        EXPECT_TRUE(cs[2].empty());
+
+        // Rebuild PQ from CS to verify consistency and absence of placeholders/stale pairs
+        PriorityQueue pq_final = get_priority_queue(cs);
+        EXPECT_TRUE(pq_final.empty());
+    }
+
+    TEST(GreedyMergeTest, GreedyMerge_MultiIterationNoSecondMerge) {
+        // Star centered at 3:
+        //   0
+        //    \
+        //     3 -- 2
+        //    /
+        //   1
+        const Graph g = {
+            {3},
+            {3},
+            {3},
+            {0,1,2}
+        };
+
+        CandidateSet cs(4);
+        // Seed only (0,1) so first iteration has exactly one merge candidate.
+        cs[0][1] = 0.8; cs[1][0] = 0.8;
+
+        // during replace of v=1, then the candidate pair (1, 2) will be 
+        // considered and it will be created a placeholder between (0, 2) 
+        // because 0 is now the representative for 1 in both PQ and CS
+        cs[1][2] = 0.001; cs[2][1] = 0.001;
+
+        // Run two iterations, but force REMOVAL of the placeholder in iter 1's update phase.
+        // The high threshold_new_saving_score makes evaluate remove placeholder candidate pairs
+        SuperNodeSet sns = greedy_merge(
+            g,
+            /*num_iterations=*/2,
+            cs,
+            /*start_threshold=*/0.5,
+            /*end_threshold=*/0.005,
+            /*ratio_base=*/0.01,
+            /*threshold_new_saving_score=*/+1.0
+        ); 
+
+        // Only the first merge should have happened
+        // Iter 1: expect 0 and 1 merged
+        // Iter 2: expect node 2 to be its original node because of no merge in second iteration
+        // There are no merge in the second iteration because CS and PQ are empty after the first iteration
+        // cs[0][2]=0.5 after the first merge is removed because new_saving <= threshold_new_saving_score
+        EXPECT_EQ(sns.get_super_node(0), sns.get_super_node(1));
+        EXPECT_EQ(2, sns.get_super_node(2));
+
+        // Expects the candidate set and PQ to be empty
+        EXPECT_TRUE(cs[0].empty());
+        EXPECT_TRUE(cs[1].empty());
+        EXPECT_TRUE(cs[2].empty());
+
+        PriorityQueue pq_final = get_priority_queue(cs);
+        EXPECT_TRUE(pq_final.empty());
     }
 }
