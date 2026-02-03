@@ -17,6 +17,7 @@ set(MAGS_LOGIC_SOURCES
         src/Partition.cpp
         src/output.cpp
         src/preprocess.cpp
+        src/file_util.cpp
 )
 
 set(MAGS_LOGIC_HEADERS
@@ -27,6 +28,7 @@ set(MAGS_LOGIC_HEADERS
         include/mags/Partition.h
         include/mags/output.h
         include/mags/preprocess.h
+        include/mags/file_util.h
 )
 add_library(mags_logic ${MAGS_LOGIC_SOURCES} ${MAGS_LOGIC_HEADERS})
 target_include_directories(mags_logic PUBLIC include)
