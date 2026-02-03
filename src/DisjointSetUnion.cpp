@@ -34,7 +34,7 @@ void DisjointSetUnion::unite(const NodeID u, const NodeID v) {
 }
 
 #ifdef UNIT_TESTING
-[[nodiscard]] NodeID DisjointSetUnion::get_direct_parent(NodeID i) const {
+[[nodiscard]] NodeID DisjointSetUnion::get_direct_parent(const NodeID i) const {
   return parents[i];
 }
 #endif

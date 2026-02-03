@@ -140,7 +140,7 @@ TEST_F(OutputTest, BicliqueMinusOne) {
   p.merge(2, 3);
   p.finalize(g);
 
-  Representation r = out::output(g, p);
+  Representation r = output(g, p);
 
   // Should still use a super-edge because 3 edges > threshold 2.5
   EXPECT_EQ(r.super_edges.size(), 1);
@@ -160,7 +160,7 @@ TEST_F(OutputTest, SparsePairPlusCorrection) {
   p.merge(2, 3);
   p.finalize(g);
 
-  auto rep = out::output(g, p);
+  auto rep = output(g, p);
 
   // Threshold not met (1 < 2.5), so no super-edge
   EXPECT_EQ(rep.super_edges.size(), 0);

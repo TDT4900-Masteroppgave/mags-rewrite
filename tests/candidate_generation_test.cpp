@@ -13,7 +13,7 @@ using namespace detail;
 
 namespace {
 int signature_matches(const int u, const int v,
-                      const cg::SignatureMatrix &sigs) {
+                      const SignatureMatrix &sigs) {
   int matches = 0;
   for (int h = 0; h < H_FUNCS; ++h) {
     if (sigs.at(u).at(h) == sigs.at(v).at(h))
@@ -24,13 +24,13 @@ int signature_matches(const int u, const int v,
 
 bool has_pair(const CandidatePairSet &cp, const int u, const int v) {
   // Check if index u is within the vector bounds
-  if (u < 0 || static_cast<size_t>(u) >= cp.size()) return false;
+  if (static_cast<size_t>(u) >= cp.size()) return false;
 
   // Access the map for node u and check if node v is a key within it
   return cp[u].contains(static_cast<NodeID>(v));
 }
 
-size_t count_pairs(const cg::CandidatePairSet &cp) {
+size_t count_pairs(const CandidatePairSet &cp) {
   size_t total = 0;
   for (const auto& map : cp) {
     total += map.size();

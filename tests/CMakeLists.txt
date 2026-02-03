@@ -17,6 +17,7 @@ add_executable(mags_tests
         PartitionTest.cpp
         output_test.cpp
         preprocess_test.cpp
+        file_util_test.cpp
 )
 
 target_link_libraries(mags_tests

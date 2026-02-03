@@ -12,21 +12,21 @@ endif()
 
 set(MAGS_LOGIC_SOURCES
         src/candidate_generation.cpp
-        src/util.cpp
         src/DisjointSetUnion.cpp
         src/Partition.cpp
         src/output.cpp
         src/preprocess.cpp
+        src/file_util.cpp
 )
 
 set(MAGS_LOGIC_HEADERS
         include/mags/candidate_generation.h
         include/mags/types.h
-        include/mags/util.h
         include/mags/DisjointSetUnion.h
         include/mags/Partition.h
         include/mags/output.h
         include/mags/preprocess.h
+        include/mags/file_util.h
 )
 add_library(mags_logic ${MAGS_LOGIC_SOURCES} ${MAGS_LOGIC_HEADERS})
 target_include_directories(mags_logic PUBLIC include)
