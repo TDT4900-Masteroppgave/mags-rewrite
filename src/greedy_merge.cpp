@@ -57,18 +57,19 @@ namespace mags::gm {
             CandidateSet& candidate_set,
             PriorityQueue& priority_queue) {
                 // v is a node to remove, and u is its new representative
+                // v is intentionally used in the code to remove old entries
                 NodeID u_super = super_nodes_set.get_super_node(v);
-    
+                
                 for (auto [candidate_node, saving_score] : candidate_set[v]) {
+                    // candidate node = 2, saving_score = 0.4
                     // removes invalid candidates (v, candidate_node) from the priority queue and candidate set
                     priority_queue.erase(priority_queue.find({saving_score, minPair(v, candidate_node)}));
-    
+                    
                     // for all candidate_nodes, remove the invalid node v as a candidate
                     candidate_set[candidate_node].erase(v);
-    
+                    
                     if (candidate_node == u_super) continue;
-    
-    
+                    
                     if (!candidate_set[u_super].contains(candidate_node)) {
                         // inserts placeholders into the candidate set and the priority queue
                         // necessary to always keep every candidate pair in the candidate set and priority queue 
@@ -148,7 +149,7 @@ namespace mags::gm {
         // Line 3: Loops over all iterations 
         for (int i = 0; i < num_iterations; i++) {
             std::vector<NodeID> batch_to_remove;
-            phmap::flat_hash_set<NodeID> batch_to_update; // set containg unique nodes and their neighbors
+            phmap::flat_hash_set<NodeID> batch_to_update; // set containing unique nodes and their neighbors
 
             // Line 4: Loops through the priority queue, by processing the elements with highest saving first
             for (const auto& [s, node_pair] : priority_queue) {
@@ -158,7 +159,7 @@ namespace mags::gm {
                 // Line 5: break for previous saving (early termination)
                 if (s < detail::merge_threshold(i, num_iterations)) continue;
 
-                // The previous saving can be out of date do to the previous merges, hence are the current saving also checked
+                // The previous saving can be out of date do to the previous merges, hence the current saving are also checked
                 // Line 6: break for current saving
                 if (super_nodes_set.saving(u, v) >= detail::merge_threshold(i, num_iterations)) {
                     // Line 7: Merge u and v into w in the set of super nodes
