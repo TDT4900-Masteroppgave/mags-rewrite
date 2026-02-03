@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 
 namespace mags::io::test {
-class FileUtilTest : public ::testing::Test {
+class FileUtilTest : public testing::Test {
 protected:
   std::string tmp_file_name = "test_graph.txt";
 
