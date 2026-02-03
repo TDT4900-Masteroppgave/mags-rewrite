@@ -12,7 +12,6 @@ endif()
 
 set(MAGS_LOGIC_SOURCES
         src/candidate_generation.cpp
-        src/util.cpp
         src/DisjointSetUnion.cpp
         src/Partition.cpp
         src/output.cpp
@@ -23,7 +22,6 @@ set(MAGS_LOGIC_SOURCES
 set(MAGS_LOGIC_HEADERS
         include/mags/candidate_generation.h
         include/mags/types.h
-        include/mags/util.h
         include/mags/DisjointSetUnion.h
         include/mags/Partition.h
         include/mags/output.h

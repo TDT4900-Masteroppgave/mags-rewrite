@@ -1,7 +1,6 @@
 #include "GraphTestUtility.h"
 #include "mags/candidate_generation.h"
 #include "mags/types.h"
-#include "mags/util.h"
 
 #include <gtest/gtest.h>
 
@@ -20,7 +19,9 @@ void GraphTestUtility::SetUp() {
 
   for (auto *g :
        {&diamond, &triangle, &star, &path, &ladder, &isolated, &clique}) {
-    util::sort_neighbors(*g);
+    for (auto& neighbors : *g) {
+      std::ranges::sort(neighbors);
+    }
   }
 }
 
