@@ -1,0 +1,68 @@
+#include "GraphTestUtility.h"
+#include "mags/file_util.h"
+#include "mags/mags.h"
+#include "mags/output.h"
+#include "mags/preprocess.h"
+
+#include <filesystem>
+#include <fstream>
+#include <gtest/gtest.h>
+
+namespace mags::test {
+class MagsTest : public GraphTestUtility {};
+
+TEST_F(MagsTest, CorrectRepresentationCost) {
+  Graph original = {{0, 1}, {0, 2}, {1, 2}, {2, 3}, {3, 4}};
+  Graph clean = preprocess::clean_graph(original);
+
+  const out::Representation r = mags(clean);
+
+  // R < |E| + C
+  EXPECT_LE(r.get_total_cost(), get_edge_count(clean));
+}
+
+TEST_F(MagsTest, Clique) {
+  Graph original = clique;
+  Graph clean = preprocess::clean_graph(original);
+
+  const out::Representation r = mags(clean);
+  EXPECT_EQ(r.super_edges.size(), 1);
+  EXPECT_EQ(r.plus_corrections.size(), 0);
+  EXPECT_EQ(r.minus_corrections.size(), 0);
+}
+
+TEST_F(MagsTest, Star) {
+  Graph original = star;
+  Graph clean = preprocess::clean_graph(original);
+  const out::Representation r = mags(clean);
+  EXPECT_LE(r.get_total_cost(), get_edge_count(clean));
+}
+
+TEST_F(MagsTest, IdenticalNeighbors) {
+  Graph original = {{2, 3}, {2, 3}, {3}, {2}};
+  Graph clean = preprocess::clean_graph(original);
+  const out::Representation r = mags(clean);
+  EXPECT_EQ(r.get_total_cost(), 1);
+}
+
+TEST_F(MagsTest, ZeroK) {
+  Graph original = path;
+  Graph clean = preprocess::clean_graph(original);
+  const out::Representation r = mags(clean, 50, 0);
+  EXPECT_EQ(r.get_total_cost(), get_edge_count(clean));
+}
+
+TEST_F(MagsTest, HigherThresholdCompactness) {
+  Graph original = path;
+  Graph clean = preprocess::clean_graph(original);
+
+  out::Representation r = mags(clean, 50);
+  const size_t cost1 = r.get_total_cost();
+
+  r = mags(clean, 5);
+  const size_t cost2 = r.get_total_cost();
+
+  EXPECT_LE(cost1, cost2);
+}
+
+} // namespace mags::test

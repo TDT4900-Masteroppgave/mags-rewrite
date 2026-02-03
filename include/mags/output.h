@@ -20,16 +20,20 @@ struct Representation {
   Representation(std::vector<std::pair<NodeID, NodeID>> se,
                  std::vector<std::pair<NodeID, NodeID>> pc,
                  std::vector<std::pair<NodeID, NodeID>> mc, const size_t n)
-      : super_edges(std::move(se)),
-        plus_corrections(std::move(pc)),
+      : super_edges(std::move(se)), plus_corrections(std::move(pc)),
         minus_corrections(std::move(mc)) {
-        summary_graph.assign(n, {});
+    summary_graph.assign(n, {});
 
     for (const auto &[u, v] : super_edges) {
       summary_graph.at(u).push_back(v);
       if (u != v)
         summary_graph.at(v).push_back(u);
     }
+  }
+
+  [[nodiscard]] size_t get_total_cost() const {
+    return super_edges.size() + plus_corrections.size() +
+           minus_corrections.size();
   }
 };
 

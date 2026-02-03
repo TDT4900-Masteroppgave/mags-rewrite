@@ -1,5 +1,6 @@
 #include "GraphTestUtility.h"
 #include "mags/candidate_generation.h"
+#include "mags/output.h"
 #include "mags/types.h"
 
 #include <gtest/gtest.h>
@@ -61,5 +62,58 @@ Graph GraphTestUtility::create_clique_graph() {
     }
   }
   return g;
+}
+
+Graph GraphTestUtility::reconstruct_graph(const out::Representation &rep,
+                        const SuperNodeMembers &members, const size_t n) {
+  Graph reconstructed(n);
+
+  // 1. Expand Super-edges
+  for (const auto &[u_root, v_root] : rep.super_edges) {
+    const auto &nodes_u = members.at(u_root);
+    const auto &nodes_v = members.at(v_root);
+
+    for (NodeID node_u : nodes_u) {
+      for (NodeID node_v : nodes_v) {
+        if (u_root == v_root && node_u >= node_v)
+          continue; // Internal self-loop logic
+
+        reconstructed[node_u].push_back(node_v);
+        reconstructed[node_v].push_back(node_u);
+      }
+    }
+  }
+
+  // 2. Add Plus Corrections
+  for (const auto &[u, v] : rep.plus_corrections) {
+    reconstructed[u].push_back(v);
+    reconstructed[v].push_back(u);
+  }
+
+  // 3. Remove Minus Corrections
+  for (const auto &[u, v] : rep.minus_corrections) {
+    auto &adj_u = reconstructed[u];
+    std::erase(adj_u, v);
+
+    auto &adj_v = reconstructed[v];
+    std::erase(adj_v, u);
+  }
+
+  // Sort neighbors for comparison
+  for (auto &neighbors : reconstructed) {
+    std::ranges::sort(neighbors);
+  }
+  return reconstructed;
+}
+
+size_t GraphTestUtility::get_edge_count(const Graph& graph) {
+  size_t edge_count = 0;
+  for (const auto &neighbors : graph) {
+    edge_count += neighbors.size();
+  }
+
+  edge_count /= 2;
+
+  return edge_count;
 }
 } // namespace mags::test

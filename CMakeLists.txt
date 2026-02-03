@@ -27,6 +27,7 @@ set(MAGS_LOGIC_HEADERS
         include/mags/output.h
         include/mags/preprocess.h
         include/mags/file_util.h
+        include/mags/mags.h
 )
 add_library(mags_logic ${MAGS_LOGIC_SOURCES} ${MAGS_LOGIC_HEADERS})
 target_include_directories(mags_logic PUBLIC include)
