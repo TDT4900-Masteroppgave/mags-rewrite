@@ -31,6 +31,8 @@ struct Representation {
     }
   }
 
+  Representation() = default;
+
   [[nodiscard]] size_t get_total_cost() const {
     return super_edges.size() + plus_corrections.size() +
            minus_corrections.size();

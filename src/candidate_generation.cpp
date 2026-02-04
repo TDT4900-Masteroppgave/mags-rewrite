@@ -1,4 +1,5 @@
 #include "mags/candidate_generation.h"
+#include "mags/types.h"
 #include "parallel_hashmap/btree.h"
 
 #include <algorithm>

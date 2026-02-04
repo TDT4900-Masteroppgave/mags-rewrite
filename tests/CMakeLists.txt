@@ -15,6 +15,8 @@ add_executable(mags_tests
         GraphTestUtility.h
         DisjointSetUnionTest.cpp
         PartitionTest.cpp
+        super_node_set_test.cpp
+        greedy_merge_test.cpp
         output_test.cpp
         preprocess_test.cpp
         file_util_test.cpp

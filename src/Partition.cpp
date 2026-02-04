@@ -38,7 +38,7 @@ const SuperNodes &Partition::get_super_nodes() const { return super_nodes; }
 
 const SuperNodeMembers &Partition::get_members() const { return members; }
 
-const OriginalEdgeCounts &Partition::get_edge_counts() const {
+const EdgeCounts &Partition::get_edge_counts() const {
   return edge_counts;
 }
 
