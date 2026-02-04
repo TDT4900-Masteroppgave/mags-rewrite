@@ -10,7 +10,7 @@ class Partition {
   DisjointSetUnion dsu;
   SuperNodes super_nodes;
   SuperNodeMembers members;
-  OriginalEdgeCounts edge_counts;
+  EdgeCounts edge_counts;
 
 public:
   explicit Partition(size_t n);
@@ -18,7 +18,7 @@ public:
 
   const SuperNodes &get_super_nodes() const;
   const SuperNodeMembers &get_members() const;
-  const OriginalEdgeCounts &get_edge_counts() const;
+  const EdgeCounts &get_edge_counts() const;
 
   long long get_cartesian_product(NodeID super_u, NodeID super_v) const;
   NodeID find_super_node(NodeID u) const;
