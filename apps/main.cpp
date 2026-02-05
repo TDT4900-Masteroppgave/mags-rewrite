@@ -1,8 +1,7 @@
-#include "graph_summarize.h"
+#include "mags/graph_summarize.h"
 #include <chrono>
 #include <iomanip>
 #include <iostream>
-#include <stdexcept>
 #include <string>
 
 void print_usage(const char *prog_name) {
@@ -50,7 +49,7 @@ int main(int argc, char *argv[]) {
 
   try {
     // Run the pipeline
-    auto rep = graph_summarize(path, t, k);
+    auto rep = summarize_from_file(path, t, k);
 
     auto end_time = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end_time - start_time;
