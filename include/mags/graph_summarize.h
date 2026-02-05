@@ -4,7 +4,7 @@
 
 namespace mags {
 
-out::Representation summarize_from_file(const std::string &path, int t = 50,
+Representation summarize_from_file(const std::string &path, int t = 50,
                                     int k = 40);
 
 }

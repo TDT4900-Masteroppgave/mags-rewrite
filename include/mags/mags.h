@@ -5,7 +5,7 @@
 
 namespace mags {
 
-out::Representation mags(const Graph &graph, int t = 50, int k = 40);
+Representation mags(const Graph &graph, int t = 50, int k = 40);
 
 } // namespace mags
 
