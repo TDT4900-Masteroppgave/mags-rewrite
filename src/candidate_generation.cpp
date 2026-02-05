@@ -93,7 +93,7 @@ void get_top_k_candidate_pairs(
     // Line 9: Select k nodes with highest mh(u,v)
     if (top_k.size() < k)
       top_k.emplace(score, v);
-    else if (score > top_k.begin()->first) {
+    else if (!top_k.empty() && score > top_k.begin()->first) {
       top_k.erase(top_k.begin());
       top_k.emplace(score, v);
     }

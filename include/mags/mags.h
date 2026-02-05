@@ -7,12 +7,12 @@
 
 namespace mags {
 
-out::Representation mags(Graph &graph, int t = 50, int k = 30);
+out::Representation mags(const Graph &graph, int t = 50, int k = 30);
 
 inline out::Representation summarize_graph(const std::string &path, const int t,
                                            const int k) {
   Graph graph = io::read_from_file(path);
-  Graph clean_graph = preprocess::clean_graph(graph);
+  const Graph clean_graph = preprocess::clean_graph(graph);
 
   return mags(clean_graph, t, k);
 }

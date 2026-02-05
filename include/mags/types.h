@@ -5,14 +5,16 @@
 #include <vector>
 
 namespace mags {
-    using NodeID = int;
-    using NodePair = std::pair<NodeID, NodeID>;
-    using Graph = std::vector<std::vector<NodeID>>;
-    using SuperNodes = std::vector<NodeID>;
-    using SuperNodeMembers = std::vector<std::vector<NodeID>>;
-    using EdgeCounts = std::vector<phmap::flat_hash_map<NodeID, int>>;
-    using CandidateSet = std::vector<phmap::flat_hash_map<int, double>>;
-    using PriorityQueue = phmap::btree_set<std::pair<double, mags::NodePair>, std::greater<>>;
-}
+using NodeID = int;
+using NodePair = std::pair<NodeID, NodeID>;
+using Graph = std::vector<std::vector<NodeID>>;
+using SuperNodes = std::vector<NodeID>;
+using SuperNodeMembers = std::vector<std::vector<NodeID>>;
+using EdgeCounts = phmap::flat_hash_map<NodeID, int>;
+using AllEdgeCounts = std::vector<phmap::flat_hash_map<NodeID, int>>;
+using CandidateSet = std::vector<phmap::flat_hash_map<int, double>>;
+using PriorityQueue =
+    phmap::btree_set<std::pair<double, mags::NodePair>, std::greater<>>;
+} // namespace mags
 
 #endif

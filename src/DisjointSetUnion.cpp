@@ -22,8 +22,13 @@ void DisjointSetUnion::unite(const NodeID u, const NodeID v) {
   if (parent_u == parent_v)
     return;
 
-  if (sizes[parent_u] < sizes[parent_v])
-    std::swap(parent_u, parent_v);
+  // REMOVED: The "Union-by-Size" optimization check
+  // if (sizes[parent_u] < sizes[parent_v])
+  //   std::swap(parent_u, parent_v);
+
+  // DETERMINISTIC BEHAVIOR:
+  // We ALWAYS make parent_v a child of parent_u.
+  // This guarantees that the root of 'u' stays the root.
 
   parents[parent_v] = parent_u;
   sizes[parent_u] += sizes[parent_v];
@@ -31,6 +36,10 @@ void DisjointSetUnion::unite(const NodeID u, const NodeID v) {
 
 [[nodiscard]] int DisjointSetUnion::size(const NodeID node) const {
   return sizes[find(node)];
+}
+
+[[nodiscard]] size_t DisjointSetUnion::get_parents_size() const {
+  return parents.size();
 }
 
 #ifdef UNIT_TESTING

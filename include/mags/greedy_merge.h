@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include "mags/super_node_set.h"
+#include "mags/SuperNodeSet.h"
 
 namespace mags::gm{
     

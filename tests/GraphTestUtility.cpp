@@ -20,7 +20,7 @@ void GraphTestUtility::SetUp() {
 
   for (auto *g :
        {&diamond, &triangle, &star, &path, &ladder, &isolated, &clique}) {
-    for (auto& neighbors : *g) {
+    for (auto &neighbors : *g) {
       std::ranges::sort(neighbors);
     }
   }
@@ -65,13 +65,13 @@ Graph GraphTestUtility::create_clique_graph() {
 }
 
 Graph GraphTestUtility::reconstruct_graph(const out::Representation &rep,
-                        const SuperNodeMembers &members, const size_t n) {
+                                          const size_t n) {
   Graph reconstructed(n);
 
   // 1. Expand Super-edges
   for (const auto &[u_root, v_root] : rep.super_edges) {
-    const auto &nodes_u = members.at(u_root);
-    const auto &nodes_v = members.at(v_root);
+    const auto &nodes_u = rep.group_members.at(u_root);
+    const auto &nodes_v = rep.group_members.at(v_root);
 
     for (NodeID node_u : nodes_u) {
       for (NodeID node_v : nodes_v) {
@@ -106,7 +106,7 @@ Graph GraphTestUtility::reconstruct_graph(const out::Representation &rep,
   return reconstructed;
 }
 
-size_t GraphTestUtility::get_edge_count(const Graph& graph) {
+size_t GraphTestUtility::get_edge_count(const Graph &graph) {
   size_t edge_count = 0;
   for (const auto &neighbors : graph) {
     edge_count += neighbors.size();

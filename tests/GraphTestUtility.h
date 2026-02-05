@@ -26,10 +26,9 @@ protected:
 
   static Graph create_clique_graph();
 
-  static Graph reconstruct_graph(const out::Representation &rep,
-                        const SuperNodeMembers &members, size_t n);
+  static Graph reconstruct_graph(const out::Representation &rep, size_t n);
 
-  static size_t get_edge_count(const Graph& graph);
+  static size_t get_edge_count(const Graph &graph);
 };
 } // namespace mags::test
 

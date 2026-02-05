@@ -30,15 +30,6 @@ TEST_F(DisjointSetUnionTest, TransitiveUnion) {
   EXPECT_EQ(dsu.find(0), dsu.find(2));
 }
 
-TEST_F(DisjointSetUnionTest, UnionBySize) {
-  dsu.unite(1, 2);                          // Group with size 2
-  const NodeID expected_root = dsu.find(1); // Root before unite
-  dsu.unite(0, 1); // Unite group 2 of size 2 with a group of size 1
-
-  EXPECT_EQ(dsu.find(0), expected_root);
-  EXPECT_EQ(dsu.size(0), 3);
-}
-
 TEST_F(DisjointSetUnionTest, PathCompression) {
   dsu.unite(0, 1); // Group A
   dsu.unite(2, 3); // Group B
