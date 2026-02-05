@@ -24,3 +24,6 @@ cmake-build-*/
 .cache
 
 parallel_hashmap/
+
+# Test data
+tests/data

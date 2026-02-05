@@ -17,6 +17,7 @@ protected:
   Graph star;
   Graph ladder;
   Graph clique;
+  std::string tmp_file_name;
 
   void SetUp() override;
 
@@ -29,6 +30,8 @@ protected:
   static Graph reconstruct_graph(const out::Representation &rep, size_t n);
 
   static size_t get_edge_count(const Graph &graph);
+
+  void write_tmp_file(const std::string &content) const;
 };
 } // namespace mags::test
 

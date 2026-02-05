@@ -24,6 +24,7 @@ set(MAGS_LOGIC_SOURCES
     src/preprocess.cpp
     src/file_util.cpp
         src/mags.cpp
+        src/graph_summarize.cpp
 )
 
 set(MAGS_LOGIC_HEADERS
@@ -36,6 +37,7 @@ set(MAGS_LOGIC_HEADERS
         include/mags/mags.h
         include/mags/SuperNodeSet.h
         include/mags/greedy_merge.h
+        include/graph_summarize.h
 )
 
 add_library(mags_logic ${MAGS_LOGIC_SOURCES} ${MAGS_LOGIC_HEADERS})
@@ -97,4 +99,16 @@ if(BUILD_TESTING)
 
     # Now add tests
     add_subdirectory(tests)
+endif()
+
+set(DOWNLOAD_SCRIPT "${CMAKE_SOURCE_DIR}/download_test_data.sh")
+
+execute_process(
+        COMMAND bash ${DOWNLOAD_SCRIPT}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        RESULT_VARIABLE DOWNLOAD_RESULT
+)
+
+if(NOT DOWNLOAD_RESULT EQUAL 0)
+    message(WARNING "Failed to download test data. Tests requiring 'email-Eu-core.txt' will fail.")
 endif()

@@ -20,6 +20,7 @@ add_executable(mags_tests
         preprocess_test.cpp
         file_util_test.cpp
         mags_test.cpp
+        graph_summarize_test.cpp
 )
 
 target_link_libraries(mags_tests

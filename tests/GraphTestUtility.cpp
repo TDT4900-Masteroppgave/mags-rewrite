@@ -3,6 +3,8 @@
 #include "mags/output.h"
 #include "mags/types.h"
 
+#include <fstream>
+#include <filesystem>
 #include <gtest/gtest.h>
 
 namespace mags::test {
@@ -17,6 +19,8 @@ void GraphTestUtility::SetUp() {
   star = create_star_graph();
   ladder = create_ladder_graph();
   clique = create_clique_graph();
+
+  tmp_file_name = "test_graph.txt";
 
   for (auto *g :
        {&diamond, &triangle, &star, &path, &ladder, &isolated, &clique}) {
@@ -115,5 +119,11 @@ size_t GraphTestUtility::get_edge_count(const Graph &graph) {
   edge_count /= 2;
 
   return edge_count;
+}
+
+void GraphTestUtility::write_tmp_file(const std::string &content) const {
+  std::ofstream outfile(tmp_file_name);
+  outfile << content;
+  outfile.close();
 }
 } // namespace mags::test
