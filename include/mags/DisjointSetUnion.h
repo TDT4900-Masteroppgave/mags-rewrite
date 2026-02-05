@@ -19,6 +19,8 @@ public:
 
   [[nodiscard]] int size(NodeID node) const;
 
+  [[nodiscard]] size_t get_parents_size() const;
+
 #ifdef UNIT_TESTING
   /// @brief Only for internal verification of path compression in tests
   [[nodiscard]] NodeID get_direct_parent(NodeID i) const;

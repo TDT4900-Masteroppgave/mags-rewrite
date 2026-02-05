@@ -9,8 +9,8 @@
 #include "parallel_hashmap/btree.h"
 #include "parallel_hashmap/phmap_fwd_decl.h"
 
+#include "mags/SuperNodeSet.h"
 #include "mags/types.h"
-#include "mags/super_node_set.h"
 
 namespace mags::gm {
     namespace detail {

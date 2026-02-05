@@ -1,5 +1,7 @@
 #include "mags/output.h"
 
+#include "mags/SuperNodeSet.h"
+
 // Possible optimization:
 // r.plus_corrections.reserve(graph.num_edges() / 10);
 // r.minus_corrections.reserve(graph.num_edges() / 10);
@@ -35,11 +37,10 @@ void find_minus_corrections(const Graph &graph,
   }
 }
 
-void find_plus_corrections(
-    const Graph &graph,
-    const std::vector<NodeID> &u_members,
-    const std::vector<NodeID> &v_members,
-    std::vector<std::pair<NodeID, NodeID>> &plus_out) {
+void find_plus_corrections(const Graph &graph,
+                           const std::vector<NodeID> &u_members,
+                           const std::vector<NodeID> &v_members,
+                           std::vector<std::pair<NodeID, NodeID>> &plus_out) {
 
   for (const NodeID u : u_members) {
     const std::vector<NodeID> &neighbors = graph.at(u);
@@ -72,45 +73,44 @@ void find_plus_corrections(
 }
 } // namespace
 
-Representation output(const Graph &graph, const Partition &p) {
+Representation output(const Graph &graph, const SuperNodeSet &p) {
   // Line 1: Initialize Super-Edges and Corrections
   std::vector<std::pair<NodeID, NodeID>> super_edges;
   std::vector<std::pair<NodeID, NodeID>> plus_corrections;
   std::vector<std::pair<NodeID, NodeID>> minus_corrections;
 
-  const auto &members = p.get_members();
-  const auto &euv = p.get_edge_counts();
+  const auto members = p.get_super_node_members();
 
   // Line 2: For each super-node u in P
   for (NodeID super_u : p.get_super_nodes()) {
-    const auto &neighbors = euv.at(super_u);
     // Line 2: For each neighboring super-node v to u
-    for (const auto &[super_v, e_uv_count] : neighbors) {
+    for (const auto &[super_v, raw_count] :
+         p.get_neighbor_edge_counts(super_u)) {
       // Process each pair {u, v} only once
       if (super_u > super_v)
         continue;
 
+      // TODO: Evaluate E_uv count, is it correctly used with unique edges?
+      const int e_uv_count = p.get_unique_edges(super_u, super_v, raw_count);
       long long pi_uv = p.get_cartesian_product(super_u, super_v); // |Pi_uv|
       // Line 4: If E_uv > (Pi_uv + 1) / 2
       if (e_uv_count > (pi_uv + 1) / 2) {
         // Line 5: Add super-edge
         super_edges.emplace_back(super_u, super_v);
         // Line 5: Add minus correction
-        find_minus_corrections(graph, members[super_u],
-          members[super_v], minus_corrections);
+        find_minus_corrections(graph, members[super_u], members[super_v],
+                               minus_corrections);
       } else {
         // Line 6: Add plus correction
-        find_plus_corrections(graph, members[super_u],
-          members[super_v], plus_corrections);
+        find_plus_corrections(graph, members[super_u], members[super_v],
+                              plus_corrections);
       }
     }
   }
 
   // Line 7: Return representation with summary graph and corrections
-  return {std::move(super_edges),
-    std::move(plus_corrections),
-    std::move(minus_corrections),
-    graph.size()};
+  return {std::move(super_edges), std::move(plus_corrections),
+          std::move(minus_corrections), std::move(members), graph.size()};
 }
 
 } // namespace mags::out

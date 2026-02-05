@@ -14,12 +14,12 @@ add_executable(mags_tests
         GraphTestUtility.cpp
         GraphTestUtility.h
         DisjointSetUnionTest.cpp
-        PartitionTest.cpp
-        super_node_set_test.cpp
+        SuperNodeSetTest.cpp
         greedy_merge_test.cpp
         output_test.cpp
         preprocess_test.cpp
         file_util_test.cpp
+        mags_test.cpp
 )
 
 target_link_libraries(mags_tests

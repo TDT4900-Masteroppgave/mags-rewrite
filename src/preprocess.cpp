@@ -8,7 +8,7 @@ Graph clean_graph(Graph &graph) {
   for (NodeID u = 0; u < n; ++u) {
     // Ensure undirectedness@
     std::vector<NodeID> neighbors = graph.at(u);
-    for ( const NodeID v : neighbors) {
+    for (const NodeID v : neighbors) {
       if (v != u) {
         graph.at(v).push_back(u);
       }

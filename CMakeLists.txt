@@ -17,25 +17,25 @@ endif()
 set(MAGS_LOGIC_SOURCES
     src/candidate_generation.cpp
     src/DisjointSetUnion.cpp
-    src/Partition.cpp
-    src/super_node_set.cpp
+        src/SuperNodeSet.cpp
     src/types.cpp
     src/greedy_merge.cpp
     src/output.cpp
     src/preprocess.cpp
     src/file_util.cpp
+        src/mags.cpp
 )
 
 set(MAGS_LOGIC_HEADERS
-    include/mags/candidate_generation.h
-    include/mags/types.h
-    include/mags/DisjointSetUnion.h
-    include/mags/Partition.h
-    include/mags/super_node_set.h
-    include/mags/greedy_merge.h
-    include/mags/output.h
-    include/mags/preprocess.h
-    include/mags/file_util.h
+        include/mags/candidate_generation.h
+        include/mags/types.h
+        include/mags/DisjointSetUnion.h
+        include/mags/output.h
+        include/mags/preprocess.h
+        include/mags/file_util.h
+        include/mags/mags.h
+        include/mags/SuperNodeSet.h
+        include/mags/greedy_merge.h
 )
 
 add_library(mags_logic ${MAGS_LOGIC_SOURCES} ${MAGS_LOGIC_HEADERS})
