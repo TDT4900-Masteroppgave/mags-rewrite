@@ -9,9 +9,7 @@
 #include "types.h"
 
 namespace mags::out {
-
 Representation output(const Graph &graph, const SuperNodeSet &p);
-
 } // namespace mags::out
 
 #endif // MAGS_REWRITE_OUTPUT_H

@@ -1,6 +1,8 @@
 #include "mags/mags.h"
 
 #include "mags/greedy_merge.h"
+#include <mags/candidate_generation.h>
+#include <mags/output.h>
 
 namespace mags {
 Representation mags(const Graph &graph, const int t, const int k) {

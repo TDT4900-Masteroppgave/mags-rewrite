@@ -2,10 +2,6 @@
 
 #include "mags/SuperNodeSet.h"
 
-// Possible optimization:
-// r.plus_corrections.reserve(graph.num_edges() / 10);
-// r.minus_corrections.reserve(graph.num_edges() / 10);
-
 namespace mags::out {
 
 namespace {
@@ -28,8 +24,8 @@ void find_minus_corrections(const Graph &graph,
         actual_idx++;
       }
 
-      // If we didn't find node_v in the actual neighbors, it's a minus
-      // correction
+      // If we didn't find node_v in the actual neighbors,
+      // it's a minus correction
       if (actual_idx == neighbors.size() || neighbors[actual_idx] != v) {
         minus_out.emplace_back(u, v);
       }
@@ -91,10 +87,11 @@ Representation output(const Graph &graph, const SuperNodeSet &p) {
         continue;
 
       // TODO: Evaluate E_uv count, is it correctly used with unique edges?
-      const int e_uv_count = p.get_unique_edges(super_u, super_v, raw_count);
-      long long pi_uv = p.get_cartesian_product(super_u, super_v); // |Pi_uv|
+      const int e_uv_count =
+          SuperNodeSet::get_unique_edges(super_u, super_v, raw_count);
       // Line 4: If E_uv > (Pi_uv + 1) / 2
-      if (e_uv_count > (pi_uv + 1) / 2) {
+      if (const long long pi_uv = p.get_cartesian_product(super_u, super_v);
+          e_uv_count > (pi_uv + 1) / 2) {
         // Line 5: Add super-edge
         super_edges.emplace_back(super_u, super_v);
         // Line 5: Add minus correction
@@ -110,7 +107,7 @@ Representation output(const Graph &graph, const SuperNodeSet &p) {
 
   // Line 7: Return representation with summary graph and corrections
   return {std::move(super_edges), std::move(plus_corrections),
-          std::move(minus_corrections), std::move(members), graph.size()};
+          std::move(minus_corrections), members, graph.size()};
 }
 
 } // namespace mags::out

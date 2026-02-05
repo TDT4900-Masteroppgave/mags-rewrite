@@ -32,7 +32,6 @@ set(MAGS_LOGIC_SOURCES
         src/candidate_generation.cpp
         src/DisjointSetUnion.cpp
         src/SuperNodeSet.cpp
-        src/types.cpp
         src/greedy_merge.cpp
         src/output.cpp
         src/preprocess.cpp

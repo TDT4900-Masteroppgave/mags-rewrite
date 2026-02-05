@@ -1,7 +1,7 @@
 #include "mags/file_util.h"
 
-#include <fstream>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 
 namespace mags::io {
@@ -17,8 +17,10 @@ Graph read_from_file(const std::string &path) {
   int max_node_id = -1;
 
   while (fin >> u >> v) {
-    if (u > max_node_id) max_node_id = u;
-    if (v > max_node_id) max_node_id = v;
+    if (u > max_node_id)
+      max_node_id = u;
+    if (v > max_node_id)
+      max_node_id = v;
   }
 
   fin.clear();

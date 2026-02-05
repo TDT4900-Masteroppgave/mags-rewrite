@@ -18,32 +18,34 @@ using PriorityQueue =
     phmap::btree_set<std::pair<double, mags::NodePair>, std::greater<>>;
 
 struct Representation {
-    std::vector<std::pair<NodeID, NodeID>> super_edges;
-    std::vector<std::pair<NodeID, NodeID>> plus_corrections;
-    std::vector<std::pair<NodeID, NodeID>> minus_corrections;
-    SuperNodeMembers group_members;
-    Graph summary_graph;
+  std::vector<std::pair<NodeID, NodeID>> super_edges;
+  std::vector<std::pair<NodeID, NodeID>> plus_corrections;
+  std::vector<std::pair<NodeID, NodeID>> minus_corrections;
+  SuperNodeMembers group_members;
+  Graph summary_graph;
 
-    // Proper constructor for the return statement
-    Representation(std::vector<std::pair<NodeID, NodeID>> se,
-                   std::vector<std::pair<NodeID, NodeID>> pc,
-                   std::vector<std::pair<NodeID, NodeID>> mc,
-                   SuperNodeMembers members, const size_t n)
-        : super_edges(std::move(se)), plus_corrections(std::move(pc)),
-          minus_corrections(std::move(mc)), group_members(std::move(members)) {
-        summary_graph.assign(n, {});
+  // Proper constructor for the return statement
+  Representation(std::vector<std::pair<NodeID, NodeID>> se,
+                 std::vector<std::pair<NodeID, NodeID>> pc,
+                 std::vector<std::pair<NodeID, NodeID>> mc,
+                 SuperNodeMembers members, const size_t n)
+      : super_edges(std::move(se)),
+        plus_corrections(std::move(pc)),
+        minus_corrections(std::move(mc)),
+        group_members(std::move(members)) {
+    summary_graph.assign(n, {});
 
-        for (const auto &[u, v] : super_edges) {
-            summary_graph.at(u).push_back(v);
-            if (u != v)
-                summary_graph.at(v).push_back(u);
-        }
+    for (const auto &[u, v] : super_edges) {
+      summary_graph.at(u).push_back(v);
+      if (u != v)
+        summary_graph.at(v).push_back(u);
     }
+  }
 
-    [[nodiscard]] size_t get_total_cost() const {
-        return super_edges.size() + plus_corrections.size() +
-               minus_corrections.size();
-    }
+  [[nodiscard]] size_t get_total_cost() const {
+    return super_edges.size() + plus_corrections.size() +
+           minus_corrections.size();
+  }
 };
 
 } // namespace mags
