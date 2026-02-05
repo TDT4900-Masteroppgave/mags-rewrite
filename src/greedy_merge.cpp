@@ -39,9 +39,9 @@ namespace mags::gm {
         double merge_threshold(
             int current_iteration,
             int num_iterations, 
-            double start_threshold = 0.5, 
-            double end_threshold = 0.005, 
-            double ratio_base = 0.01) {
+            double start_threshold,
+            double end_threshold,
+            double ratio_base) {
                 if (current_iteration == num_iterations) {
                     return end_threshold;
                 } 
@@ -135,7 +135,7 @@ namespace mags::gm {
         int num_iterations,
         CandidateSet& candidate_set, 
         double start_threshold = 0.5, 
-        double end_threshold = 0.005, 
+        double end_threshold = 0.001,
         double ratio_base = 0.01,
         double threshold_new_saving_score = -0.03
         ) {
@@ -156,11 +156,11 @@ namespace mags::gm {
                 auto [u, v] = node_pair;
 
                 // Line 5: break for previous saving (early termination)
-                if (s < detail::merge_threshold(i, num_iterations)) continue;
+                if (s < detail::merge_threshold(i, num_iterations, start_threshold, end_threshold, ratio_base)) continue;
 
                 // The previous saving can be out of date do to the previous merges, hence the current saving are also checked
                 // Line 6: break for current saving
-                if (super_nodes_set.saving(u, v) >= detail::merge_threshold(i, num_iterations)) {
+                if (super_nodes_set.saving(u, v) >= detail::merge_threshold(i, num_iterations, start_threshold, end_threshold, ratio_base)) {
                     // Line 7: Merge u and v into w in the set of super nodes
                     super_nodes_set.merge(u,v);
                     

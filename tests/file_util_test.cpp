@@ -1,3 +1,4 @@
+#include "GraphTestUtility.h"
 #include "mags/file_util.h"
 #include "mags/types.h"
 
@@ -6,20 +7,7 @@
 #include <gtest/gtest.h>
 
 namespace mags::io::test {
-class FileUtilTest : public testing::Test {
-protected:
-  std::string tmp_file_name = "test_graph.txt";
-
-  void write_tmp_file(const std::string &content) const {
-    std::ofstream outfile(tmp_file_name);
-    outfile << content;
-    outfile.close();
-  }
-
-  void SetUp() override { std::filesystem::remove(tmp_file_name); }
-
-  void TearDown() override { std::filesystem::remove(tmp_file_name); }
-};
+class FileUtilTest : public mags::test::GraphTestUtility {};
 
 TEST_F(FileUtilTest, StandardEdgeList) {
   write_tmp_file("0 1\n0 2\n2 1");
