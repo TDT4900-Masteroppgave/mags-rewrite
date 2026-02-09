@@ -48,7 +48,7 @@ struct Representation {
            minus_corrections.size();
   }
 
-  size_t get_relative_size() const {
+  double get_relative_size() const {
     size_t edge_count = 0;
     for (const auto &neighbors : original_graph) {
       edge_count += neighbors.size();
@@ -57,7 +57,7 @@ struct Representation {
     // Each edge is counted twice in an undirected graph
     edge_count /= 2;
 
-    return get_total_cost() / edge_count;
+    return static_cast<double>(get_total_cost()) / edge_count;
   }
 };
 }// namespace mags

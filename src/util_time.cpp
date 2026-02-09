@@ -6,7 +6,7 @@ std::chrono::system_clock::time_point timing::read_time{};
 std::chrono::system_clock::time_point timing::merge_time{};
 std::chrono::system_clock::time_point timing::encoding_time{};
 
-void timing::set_time(std::chrono::system_clock::time_point time) {
+void timing::set_time(std::chrono::system_clock::time_point& time) {
   time = std::chrono::system_clock::now();
 }
 
