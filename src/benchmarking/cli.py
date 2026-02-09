@@ -86,16 +86,16 @@ if __name__ == "__main__":
     datasets = {
         "CA": "as-caida20071105.txt",
         "EN": "Email-Enron.txt",
-        "BK": "Brightkite_edges.txt",
-        "EA": "Email-EuAll.txt",
-        "SL": "Slashdot0902.txt",
-        "DB": "com-dblp.ungraph.txt"
+        # "BK": "Brightkite_edges.txt",
+        # "EA": "Email-EuAll.txt",
+        # "SL": "Slashdot0902.txt",
+        # "DB": "com-dblp.ungraph.txt"
     }
 
     # Program to benchmark
     programs = [
         "mags",
-        # "mags_dm"
+        "mags_rewrite"
         ]
     
     main(datasets, programs)
