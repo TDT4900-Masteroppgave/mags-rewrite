@@ -5,7 +5,6 @@
 #include <vector>
 
 namespace mags {
-
 using NodeID = int;
 using NodePair = std::pair<NodeID, NodeID>;
 using Graph = std::vector<std::vector<NodeID>>;
@@ -49,18 +48,18 @@ struct Representation {
            minus_corrections.size();
   }
 
-  size_t get_original_edge_count(const Representation& rep) {
+  size_t get_relative_size() const {
     size_t edge_count = 0;
-    for (const auto &neighbors : graph) {
+    for (const auto &neighbors : original_graph) {
       edge_count += neighbors.size();
     }
-    
+
     // Each edge is counted twice in an undirected graph
     edge_count /= 2;
 
     return get_total_cost() / edge_count;
-}
-
-} // namespace mags
+  }
+};
+}// namespace mags
 
 #endif
