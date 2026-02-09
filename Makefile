@@ -1,16 +1,8 @@
-# ==========================================
-# Mags-Rewrite Makefile
-# Wrapper around CMake for easy Release/Debug switching
-# ==========================================
-
-# Configuration
 BUILD_DIR   = build
 EXEC_NAME   = mags_rewrite
 
-# Phony targets (not real files)
 .PHONY: all release debug clean test help format
 
-# Default target: Build Release
 all: release
 
 release: clean
