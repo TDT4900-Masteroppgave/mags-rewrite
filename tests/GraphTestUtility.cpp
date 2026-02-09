@@ -68,7 +68,7 @@ Graph GraphTestUtility::create_clique_graph() {
   return g;
 }
 
-Graph GraphTestUtility::reconstruct_graph(const out::Representation &rep,
+Graph GraphTestUtility::reconstruct_graph(const Representation &rep,
                                           const size_t n) {
   Graph reconstructed(n);
 

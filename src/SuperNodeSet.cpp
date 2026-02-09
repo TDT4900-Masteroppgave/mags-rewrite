@@ -8,7 +8,8 @@ using namespace mags;
 SuperNodeSet::SuperNodeSet(const Graph &graph) : dsu(graph.size()) {
   // initializes edge count for between each node and their neighbor to 1,
   // no entry is created for nodes that does not have any neighbor
-  // TODO: is it necessary to do this here? No super node will ever have a nbr here
+  // TODO: is it necessary to do this here?
+  // No super node will ever have a nbr here
   edge_counts.resize(graph.size());
   for (int u = 0; u < graph.size(); u++) {
     for (int nbr : graph.at(u)) {
@@ -51,13 +52,13 @@ EdgeCounts SuperNodeSet::get_neighbor_edge_counts(const NodeID u) const {
   return edge_counts[u_super];
 }
 
-EdgeCounts SuperNodeSet::get_neighbor_edge_counts(const NodeID u, const NodeID v) const {
+EdgeCounts SuperNodeSet::get_neighbor_edge_counts(const NodeID u,
+                                                  const NodeID v) const {
   const NodeID u_super = get_super_node(u);
   const NodeID v_super = get_super_node(v);
 
   // initializes the edge counts for w to the edge counts for u
-  EdgeCounts w_neighbor_edge_counts =
-      get_neighbor_edge_counts(u_super);
+  EdgeCounts w_neighbor_edge_counts = get_neighbor_edge_counts(u_super);
 
   // add the edge counts for v to w
   for (const auto &[nbr, num_nbr_edges] : get_neighbor_edge_counts(v_super)) {
@@ -90,7 +91,8 @@ int SuperNodeSet::get_cartesian_product(const NodeID u, const NodeID v) const {
 }
 
 int SuperNodeSet::get_cartesian_product(const NodeID u, const NodeID v,
-  const int num_vertices_u, const int num_vertices_v) {
+                                        const int num_vertices_u,
+                                        const int num_vertices_v) {
   /*
       Getter for the cartesian product between two nodes.
       The cartesian product between two nodes corresponds to all possible
@@ -106,15 +108,16 @@ int SuperNodeSet::get_cartesian_product(const NodeID u, const NodeID v,
   }
 }
 
-double SuperNodeSet::accumulate_cost(const NodeID u, const int num_vertices_u,
-    const EdgeCounts &neighbor_edge_counts) const {
+double
+SuperNodeSet::accumulate_cost(const NodeID u, const int num_vertices_u,
+                              const EdgeCounts &neighbor_edge_counts) const {
   double total_cost = 0.0;
 
   // iterates over a map containing neighbors to the node and the number of
   // edges between the node and the neighbor
   for (const auto &[neighbor, num_nbr_edges] : neighbor_edge_counts) {
-    const int cartesian_product = get_cartesian_product(
-        u, neighbor, num_vertices_u, dsu.size(neighbor));
+    const int cartesian_product =
+        get_cartesian_product(u, neighbor, num_vertices_u, dsu.size(neighbor));
     const int unique_nbr_edges = get_unique_edges(u, neighbor, num_nbr_edges);
 
     // cart = 1, unique = 1, min(1-1+1=1, 1)=1
@@ -136,7 +139,7 @@ double SuperNodeSet::get_merge_cost(const NodeID u, const NodeID v) const {
   */
   const int merged_num_vertices = dsu.size(u) + dsu.size(v);
 
-  // accumulate cost for new merged node
+  // accumulate cost for a new merged node
   return accumulate_cost(u, merged_num_vertices,
                          get_neighbor_edge_counts(u, v));
 }
@@ -157,7 +160,9 @@ void SuperNodeSet::update_neighbor_edge_counts(const NodeID u, const NodeID v) {
   const NodeID u_super = get_super_node(u);
   const NodeID v_super = get_super_node(v);
 
-  if (u_super == v_super) {return;}
+  if (u_super == v_super) {
+    return;
+  }
 
   EdgeCounts w_neighbor_edge_counts =
       get_neighbor_edge_counts(u_super, v_super);
@@ -188,5 +193,3 @@ void SuperNodeSet::merge(const NodeID u, const NodeID v) {
 #ifdef UNIT_TESTING
 [[nodiscard]] DisjointSetUnion SuperNodeSet::get_dsu() const { return dsu; }
 #endif
-
-

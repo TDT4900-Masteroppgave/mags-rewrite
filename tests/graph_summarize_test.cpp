@@ -6,7 +6,7 @@
 #include <iomanip>
 #include <iostream>
 
-#include <graph_summarize.h>
+#include <../include/mags/graph_summarize.h>
 #include <gtest/gtest.h>
 
 class GraphSummarizeTest : public test::GraphTestUtility {};
@@ -16,7 +16,7 @@ std::string email_data = "../../tests/data/email-Eu-core.txt";
 TEST_F(GraphSummarizeTest, ValidGraph) {
   write_tmp_file("0 1\n0 2\n2 1");
 
-  const auto r = graph_summarize(tmp_file_name);
+  const auto r = summarize_from_file(tmp_file_name);
 
   EXPECT_EQ(r.get_total_cost(), 1);
   EXPECT_EQ(r.super_edges.size(), 1);
@@ -45,7 +45,7 @@ TEST_F(GraphSummarizeTest, EmailEUCore) {
   original_edges /= 2; // Undirected count
 
   // 2. Run Algorithm
-  const auto r = graph_summarize(file_path, 50, 40);
+  const auto r = summarize_from_file(file_path, 50, 40);
 
   // 3. Output Comparisons
   double ratio = (double)r.get_total_cost() / original_edges;
@@ -153,13 +153,11 @@ TEST_F(GraphSummarizeTest, EmailEUCore_DetailedRuntime) {
   std::cout << "-------------------------------------------------------------" << std::endl;
 
   double improvement = (1.0 - (my_ratio / B_RATIO)) * 100.0;
-  // If my ratio is lower, improvement is positive
-  // If my ratio is 0.5 and theirs is 0.8, I am (1 - 0.5/0.8) better.
 
   std::cout << std::left << std::setw(15) << "Ratio"
             << "| " << std::setw(10) << std::setprecision(4) << my_ratio << " "
             << "| " << std::setw(10) << std::setprecision(4) << B_RATIO << " "
-            << "| " << (B_RATIO - my_ratio) << " (Raw Diff)" << std::endl;
+            << "| " << (B_RATIO - my_ratio) << " (" << improvement << "% )" << std::endl;
 
   std::cout << "-------------------------------------------------------------" << std::endl;
 }

@@ -24,7 +24,7 @@ class SuperNodeSet {
   AllEdgeCounts edge_counts;
 
 public:
-  explicit SuperNodeSet(const Graph& graph);
+  explicit SuperNodeSet(const Graph &graph);
 
   NodeID get_super_node(NodeID u) const;
   SuperNodes get_super_nodes() const;
@@ -32,7 +32,8 @@ public:
   EdgeCounts get_neighbor_edge_counts(NodeID u) const;
   EdgeCounts get_neighbor_edge_counts(NodeID u, NodeID v) const;
   int get_cartesian_product(NodeID u, NodeID v) const;
-  static int get_cartesian_product(NodeID u, NodeID v, int u_edges, int v_edges);
+  static int get_cartesian_product(NodeID u, NodeID v, int u_edges,
+                                   int v_edges);
   double get_cost(NodeID u) const;
   double get_merge_cost(NodeID u, NodeID v) const;
   static int get_unique_edges(NodeID u, NodeID v, int num_raw_edges);
@@ -40,17 +41,14 @@ public:
   void merge(NodeID u, NodeID v);
   double saving(NodeID u, NodeID v) const;
 
-
-
 #ifdef UNIT_TESTING
   [[nodiscard]] DisjointSetUnion get_dsu() const;
 #endif
 
 private:
-
-  double
-  accumulate_cost(NodeID u, int num_vertices_u,
-                  const phmap::flat_hash_map<int, int> &neighbor_edge_counts) const;
+  double accumulate_cost(
+      NodeID u, int num_vertices_u,
+      const phmap::flat_hash_map<int, int> &neighbor_edge_counts) const;
   void update_neighbor_edge_counts(NodeID u, NodeID v);
 
 #ifdef UNIT_TESTING
