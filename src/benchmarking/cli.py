@@ -61,12 +61,13 @@ def main(datasets: Dict[str, str], programs: List[str]):
 
     args = parser.parse_args()
 
-    # python3 cli.py collect --out results/data.json
+    # python3 src/benchmarking/cli.py collect --out results/data.json
     if args.cmd == "collect":
         collect(datasets, programs, args.out)
         print(f"Saved results to {args.out}")
 
-    # python3 cli.py plot --input results/data.json --y relative_size --out results/plots/relative_size.png --title "Relative Size per Dataset by Program"
+    # python3 src/benchmarking/cli.py plot --input results/data.json --y relative_size --out results/plots/relative_size.png --title "Relative Size per Dataset by Program"
+    # python3 src/benchmarking/cli.py plot --input results/data.json --y merge --out results/plots/merge_time.png --title "Merge Time per Dataset by Program"
     elif args.cmd == "plot":
         # load data from file
         with open(PROJECT_ROOT/args.input, "r") as f:
@@ -86,10 +87,10 @@ if __name__ == "__main__":
     datasets = {
         "CA": "as-caida20071105.txt",
         "EN": "Email-Enron.txt",
-        # "BK": "Brightkite_edges.txt",
-        # "EA": "Email-EuAll.txt",
-        # "SL": "Slashdot0902.txt",
-        # "DB": "com-dblp.ungraph.txt"
+        "BK": "Brightkite_edges.txt",
+        "EA": "Email-EuAll.txt",
+        "SL": "Slashdot0902.txt",
+        "DB": "com-dblp.ungraph.txt"
     }
 
     # Program to benchmark
