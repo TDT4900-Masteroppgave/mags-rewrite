@@ -1,10 +1,9 @@
-#include "graph_summarize.h"
 #include "mags/candidate_generation.h"
 #include "mags/util_time.h"
+#include "mags/graph_summarize.h"
 #include <chrono>
 #include <iomanip>
 #include <iostream>
-#include <stdexcept>
 #include <string>
 
 void print_usage(const char *prog_name) {
@@ -44,7 +43,7 @@ int main(int argc, char *argv[]) {
   // Execution
   try {
     // Run the pipeline
-    auto rep = graph_summarize(dataset_path, t, k);
+    auto rep = summarize_from_file(dataset_path, t, k);
 
     // Generating report
     std::cout << headers << std::endl;
