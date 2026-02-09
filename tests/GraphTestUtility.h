@@ -4,9 +4,6 @@
 #include "mags/types.h"
 #include <gtest/gtest.h>
 
-namespace mags::out {
-struct Representation;
-}
 namespace mags::test {
 class GraphTestUtility : public testing::Test {
 protected:
@@ -27,7 +24,7 @@ protected:
 
   static Graph create_clique_graph();
 
-  static Graph reconstruct_graph(const out::Representation &rep, size_t n);
+  static Graph reconstruct_graph(const Representation &rep, size_t n);
 
   static size_t get_edge_count(const Graph &graph);
 
