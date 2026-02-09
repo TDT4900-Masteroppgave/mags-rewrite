@@ -6,6 +6,17 @@
 #include <iostream>
 #include <string>
 
+size_t get_edge_count(const Graph &graph) {
+  size_t edge_count = 0;
+  for (const auto &neighbors : graph) {
+    edge_count += neighbors.size();
+  }
+
+  edge_count /= 2;
+
+  return edge_count;
+}
+
 void print_usage(const char *prog_name) {
   std::cerr << "Usage: " << prog_name << " <graph_file_path> [t] [k]\n"
             << "Options:\n"
@@ -53,7 +64,7 @@ int main(int argc, char *argv[]) {
               << timing::get_elapsed_time(timing::read_time, timing::merge_time).count() << ", " 
               << timing::get_elapsed_time(timing::merge_time, timing::encoding_time).count() << ", "
               << std::defaultfloat << std::setprecision(9) // resets precision
-              << rep.get_total_cost() 
+              << rep.get_relative_size()
               << std::endl;
 
   } catch (const std::exception &e) {

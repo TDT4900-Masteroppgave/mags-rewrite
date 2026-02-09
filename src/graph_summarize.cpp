@@ -14,7 +14,7 @@ const int k) {
   Graph inputGraph = io::read_from_file(path);
   timing::set_time(timing::read_time);
   const Graph clean = preprocess::clean_graph(inputGraph);
-  return mags(clean, t, k);;
+  return mags(clean, t, k);
 }
 
 } // namespace mags
