@@ -1,6 +1,6 @@
 #include "mags/graph_summarize.h"
 
-#include <mags/file_util.h>
+#include <mags/util_file.h>
 #include <mags/mags.h>
 #include <mags/preprocess.h>
 #include "mags/util_time.h"
