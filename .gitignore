@@ -27,3 +27,12 @@ parallel_hashmap/
 
 # Test data
 tests/data
+
+# Windows metadata
+"*:Zone.Identifier"
+
+#Python
+.venv
+__pycache__/
+*.py[cod]
+*$py.class
