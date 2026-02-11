@@ -1,0 +1,46 @@
+{
+    "CA": [
+        {
+            "program": "Mags",
+            "dataset": "/root/datateknologi/master/mags-rewrite/data/cleaned/as-caida20071105.txt",
+            "hash_num": "40",
+            "iterations": "50",
+            "read": "0.030",
+            "merge": "3.523",
+            "encoding": "0.017",
+            "relative_size": "0.441552238"
+        },
+        {
+            "program": "mags_rewrite",
+            "dataset": "/root/datateknologi/master/mags-rewrite/data/cleaned/as-caida20071105.txt",
+            "hash_num": "40",
+            "iterations": "50",
+            "read": "0.000",
+            "merge": "0.000",
+            "encoding": "0.000",
+            "relative_size": "20725"
+        }
+    ],
+    "EN": [
+        {
+            "program": "Mags",
+            "dataset": "/root/datateknologi/master/mags-rewrite/data/cleaned/Email-Enron.txt",
+            "hash_num": "40",
+            "iterations": "50",
+            "read": "0.035",
+            "merge": "5.345",
+            "encoding": "0.021",
+            "relative_size": "0.655335607"
+        },
+        {
+            "program": "mags_rewrite",
+            "dataset": "/root/datateknologi/master/mags-rewrite/data/cleaned/Email-Enron.txt",
+            "hash_num": "40",
+            "iterations": "50",
+            "read": "0.000",
+            "merge": "0.000",
+            "encoding": "0.000",
+            "relative_size": "114852"
+        }
+    ]
+}

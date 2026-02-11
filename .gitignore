@@ -25,4 +25,13 @@ cmake-build-*/
 
 parallel_hashmap/
 
+# Windows metadata
+"*:Zone.Identifier"
+
+#Python
+.venv
+__pycache__/
+*.py[cod]
+*$py.class
+
 compile_commands.json
