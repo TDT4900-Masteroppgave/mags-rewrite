@@ -106,8 +106,8 @@ Representation output(const Graph &graph, const SuperNodeSet &p) {
   }
 
   // Line 7: Return representation with summary graph and corrections
-  return {std::move(super_edges), std::move(plus_corrections),
-          std::move(minus_corrections), members, graph.size()};
+  return Representation(std::move(super_edges), std::move(plus_corrections),
+          std::move(minus_corrections), members, graph.size(), graph);
 }
 
 } // namespace mags::out

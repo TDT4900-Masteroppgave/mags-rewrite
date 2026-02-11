@@ -1,5 +1,5 @@
 #include "GraphTestUtility.h"
-#include "mags/file_util.h"
+#include "mags/util_file.h"
 #include "mags/types.h"
 
 #include <fstream>
