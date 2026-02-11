@@ -24,7 +24,7 @@ TEST_F(GraphSummarizeTest, ValidGraph) {
   EXPECT_TRUE(r.minus_corrections.empty());
 }
 
-#include "mags/file_util.h"   // For io::read_from_file
+#include "mags/util_file.h"   // For io::read_from_file
 
 TEST_F(GraphSummarizeTest, EmailEUCore) {
   // Path adjustment for build directory
