@@ -3,7 +3,7 @@
 #include "types.h"
 
 namespace mags {
-Representation mags(const Graph &graph, int t = 50, int k = 40);
+[[nodiscard]] Representation mags(const Graph &graph, int t = 50, int k = 40);
 } // namespace mags
 
 #endif // MAGS_REWRITE_MAGS_H

@@ -8,7 +8,7 @@ DisjointSetUnion::DisjointSetUnion(const size_t n) : parents(n), sizes(n, 1) {
   std::iota(parents.begin(), parents.end(), 0);
 }
 
-[[nodiscard]] NodeID DisjointSetUnion::find(const NodeID node) const {
+NodeID DisjointSetUnion::find(const NodeID node) const {
   if (parents[node] != node)
     parents[node] = find(parents[node]);
 
@@ -16,8 +16,8 @@ DisjointSetUnion::DisjointSetUnion(const size_t n) : parents(n), sizes(n, 1) {
 }
 
 void DisjointSetUnion::unite(const NodeID u, const NodeID v) {
-  NodeID parent_u = find(u);
-  NodeID parent_v = find(v);
+  const NodeID parent_u = find(u);
+  const NodeID parent_v = find(v);
 
   if (parent_u == parent_v)
     return;
@@ -34,16 +34,16 @@ void DisjointSetUnion::unite(const NodeID u, const NodeID v) {
   sizes[parent_u] += sizes[parent_v];
 }
 
-[[nodiscard]] int DisjointSetUnion::size(const NodeID node) const {
+int DisjointSetUnion::size(const NodeID node) const {
   return sizes[find(node)];
 }
 
-[[nodiscard]] size_t DisjointSetUnion::get_parents_size() const {
+size_t DisjointSetUnion::get_parents_size() const {
   return parents.size();
 }
 
 #ifdef UNIT_TESTING
-[[nodiscard]] NodeID DisjointSetUnion::get_direct_parent(const NodeID i) const {
+NodeID DisjointSetUnion::get_direct_parent(const NodeID i) const {
   return parents[i];
 }
 #endif

@@ -26,29 +26,38 @@ class SuperNodeSet {
 public:
   explicit SuperNodeSet(const Graph &graph);
 
-  NodeID get_super_node(NodeID u) const;
-  SuperNodes get_super_nodes() const;
-  SuperNodeMembers get_super_node_members() const;
-  EdgeCounts get_neighbor_edge_counts(NodeID u) const;
-  EdgeCounts get_neighbor_edge_counts(NodeID u, NodeID v) const;
-  int get_cartesian_product(NodeID u, NodeID v) const;
-  static int get_cartesian_product(NodeID u, NodeID v, int u_edges,
+  [[nodiscard]] NodeID get_super_node(NodeID u) const;
+  [[nodiscard]] SuperNodes get_super_nodes() const;
+  [[nodiscard]] SuperNodeMembers get_super_node_members() const;
+
+  // Optimized: returns const reference to avoid copy
+  [[nodiscard]] const EdgeCounts& get_neighbor_edge_counts(NodeID u) const;
+
+  // Helper for merging maps (still returns by value as it creates a new map)
+  [[nodiscard]] EdgeCounts get_neighbor_edge_counts(NodeID u, NodeID v) const;
+
+  [[nodiscard]] int get_cartesian_product(NodeID u, NodeID v) const;
+  [[nodiscard]] static int get_cartesian_product(NodeID u, NodeID v, int u_edges,
                                    int v_edges);
-  double get_cost(NodeID u) const;
-  double get_merge_cost(NodeID u, NodeID v) const;
-  static int get_unique_edges(NodeID u, NodeID v, int num_raw_edges);
+  [[nodiscard]] double get_cost(NodeID u) const;
+
+  // Optimized to avoid map construction
+  [[nodiscard]] double get_merge_cost(NodeID u, NodeID v) const;
+
+  [[nodiscard]] static int get_unique_edges(NodeID u, NodeID v, int num_raw_edges);
 
   void merge(NodeID u, NodeID v);
-  double saving(NodeID u, NodeID v) const;
+  [[nodiscard]] double saving(NodeID u, NodeID v) const;
 
 #ifdef UNIT_TESTING
   [[nodiscard]] DisjointSetUnion get_dsu() const;
 #endif
 
 private:
-  double accumulate_cost(
+  [[nodiscard]] double accumulate_cost(
       NodeID u, int num_vertices_u,
       const phmap::flat_hash_map<int, int> &neighbor_edge_counts) const;
+
   void update_neighbor_edge_counts(NodeID u, NodeID v);
 
 #ifdef UNIT_TESTING

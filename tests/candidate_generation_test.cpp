@@ -3,6 +3,7 @@
 #include "mags/candidate_generation.h"
 #include <algorithm>
 #include <gtest/gtest.h>
+#include <parallel_hashmap/phmap.h>
 #include <random>
 #include <ranges>
 
@@ -205,7 +206,7 @@ TEST_F(CandidateGenerationTest, VisitedVsUnvisited) {
 
 TEST_F(CandidateGenerationTest, TwoHopSamplingLimit) {
   const auto g = star; // Node 0 is connected to 10 nodes
-  std::unordered_set<NodeID> neighbors;
+  phmap::flat_hash_set<NodeID> neighbors;
 
   // Sample only 2 neighbors of Node 0
   get_two_hop_neighbors(g, 0, 2, neighbors);
@@ -218,7 +219,7 @@ TEST_F(CandidateGenerationTest, TwoHopSamplingLimit) {
 TEST_F(CandidateGenerationTest, TopKPriorityEviction) {
   constexpr NodeID u = 0;
   constexpr int k = 2;
-  const std::unordered_set neighbors = {1, 2, 3};
+  const phmap::flat_hash_set<NodeID> neighbors = {1, 2, 3};
 
   // Create a dummy signature matrix where 1 and 2 are better than 3
   SignatureMatrix sigs(4, std::vector(H_FUNCS, 0));
