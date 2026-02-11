@@ -25,7 +25,4 @@ cmake-build-*/
 
 parallel_hashmap/
 
-# Test data
-tests/data
-
 compile_commands.json

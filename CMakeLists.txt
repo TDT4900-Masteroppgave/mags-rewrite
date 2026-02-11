@@ -84,16 +84,3 @@ if(BUILD_TESTING)
 
     add_subdirectory(tests)
 endif()
-
-# --- Data Download
-set(DOWNLOAD_SCRIPT "${CMAKE_SOURCE_DIR}/download_test_data.sh")
-
-execute_process(
-        COMMAND bash ${DOWNLOAD_SCRIPT}
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        RESULT_VARIABLE DOWNLOAD_RESULT
-)
-
-if (NOT DOWNLOAD_RESULT EQUAL 0)
-    message(WARNING "Failed to download test data. Tests requiring 'email-Eu-core.txt' will fail.")
-endif ()
