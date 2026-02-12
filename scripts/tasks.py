@@ -68,7 +68,7 @@ target_include_directories(mags PRIVATE src src/parallel_hashmap)
 target_link_libraries(mags PRIVATE OpenMP::OpenMP_CXX)
 
 if(MSVC)
-    target_compile_options(mags PRIVATE /W0)
+    target_compile_options(mags PRIVATE /W0 /openmp:llvm)
 else()
     target_compile_options(mags PRIVATE -w)
 endif()
