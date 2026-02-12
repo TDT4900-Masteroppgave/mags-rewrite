@@ -4,11 +4,25 @@ import shlex
 import shutil
 import platform
 import sys
+import os
 from invoke import task
 from pathlib import Path
 
+# Standardization: Project Root is one level up from the scripts folder
 ROOT = Path(__file__).resolve().parents[1]
 EXTERNAL_DIR = ROOT / "external" / "mags-release"
+
+def safe_path(path):
+    """
+    Cross-platform path quoting.
+    - Windows: Uses double quotes (") because cmd.exe doesn't support single quotes.
+    - Linux/Mac: Uses shlex.quote (single quotes) for POSIX safety.
+    """
+    path_str = str(path)
+    if platform.system() == "Windows":
+        # Force double quotes for Windows paths to handle spaces
+        return f'"{path_str}"'
+    return shlex.quote(path_str)
 
 @task
 def setup(c):
@@ -19,12 +33,12 @@ def setup(c):
 
     if not EXTERNAL_DIR.exists():
         print("⬇️ Cloning original MAGS...")
-        c.run(f"git clone https://github.com/nedchu/mags-release.git {shlex.quote(str(EXTERNAL_DIR))}")
+        # FIX: Use safe_path instead of shlex.quote
+        c.run(f"git clone https://github.com/nedchu/mags-release.git {safe_path(EXTERNAL_DIR)}")
 
 @task
 def build_external(c, mode="Release"):
     """Patch and Build the original MAGS code with OpenMP support."""
-
     # 1. Patch the typo
     pgsum_path = EXTERNAL_DIR / "src" / "pgsum.cpp"
     if pgsum_path.exists():
@@ -59,7 +73,6 @@ else()
     target_compile_options(mags PRIVATE -w)
 endif()
 """
-    # Only write if it doesn't match to avoid constant rebuilds (optional optimization)
     target_cmake = EXTERNAL_DIR / "CMakeLists.txt"
     if not target_cmake.exists() or target_cmake.read_text().strip() != cmake_content.strip():
         print("📝 Generating CMakeLists.txt for external repo...")
@@ -81,19 +94,19 @@ endif()
     print(f"⚙️  Configuring External MAGS ({mode})...")
     ext_build = EXTERNAL_DIR / "build"
 
-    # Use shlex.quote to handle spaces in paths
-    cmd_config = f'cmake -S {shlex.quote(str(EXTERNAL_DIR))} -B {shlex.quote(str(ext_build))} -DCMAKE_BUILD_TYPE={mode}{extra_flags}'
+    # FIX: Use safe_path
+    cmd_config = f'cmake -S {safe_path(EXTERNAL_DIR)} -B {safe_path(ext_build)} -DCMAKE_BUILD_TYPE={mode}{extra_flags}'
     c.run(cmd_config)
 
     print(f"🔨 Compiling External MAGS...")
-    c.run(f'cmake --build {shlex.quote(str(ext_build))} -j')
+    # FIX: Use safe_path
+    c.run(f'cmake --build {safe_path(ext_build)} -j')
 
-    # 5. COPY Executable to main build folder (THE FIX)
+    # 5. COPY Executable to main build folder
     exe_name = "mags.exe" if platform.system() == "Windows" else "mags"
     src_exe = ext_build / exe_name
     dst_exe = ROOT / "build" / exe_name
 
-    # Ensure the main build directory exists
     dst_exe.parent.mkdir(parents=True, exist_ok=True)
 
     if src_exe.exists():
@@ -106,8 +119,10 @@ endif()
 def benchmark(c, group="small"):
     """Run benchmark."""
     print(f"🚀 Running {group} benchmarks...")
-    cli_path = shlex.quote(str(ROOT / "benchmarking" / "cli.py"))
-    python_exe = shlex.quote(sys.executable)
+
+    # FIX: Use safe_path everywhere
+    cli_path = safe_path(ROOT / "benchmarking" / "cli.py")
+    python_exe = safe_path(sys.executable)
 
     # Run the collection script
     c.run(f"{python_exe} {cli_path} collect --group {group} --out results/data.json",
@@ -116,8 +131,8 @@ def benchmark(c, group="small"):
 @task
 def plot(c):
     """Generate plots."""
-    cli_path = shlex.quote(str(ROOT / "benchmarking" / "cli.py"))
-    python_exe = shlex.quote(sys.executable)
+    cli_path = safe_path(ROOT / "benchmarking" / "cli.py")
+    python_exe = safe_path(sys.executable)
     use_pty = platform.system() != "Windows"
 
     c.run(f"{python_exe} {cli_path} plot --input results/data.json --y relative_size --out results/plots/relative_size.png", pty=use_pty)
@@ -170,7 +185,6 @@ def clean(c):
     """Clean up build artifacts and temporary files."""
     print("🧹 Cleaning up project...")
 
-    # List of patterns/directories to remove
     targets = [
         ROOT / "build",
         ROOT / "external",
