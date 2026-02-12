@@ -20,7 +20,6 @@ def safe_path(path):
     """
     path_str = str(path)
     if platform.system() == "Windows":
-        # Force double quotes for Windows paths to handle spaces
         return f'"{path_str}"'
     return shlex.quote(path_str)
 
@@ -33,7 +32,6 @@ def setup(c):
 
     if not EXTERNAL_DIR.exists():
         print("⬇️ Cloning original MAGS...")
-        # FIX: Use safe_path instead of shlex.quote
         c.run(f"git clone https://github.com/nedchu/mags-release.git {safe_path(EXTERNAL_DIR)}")
 
 @task
@@ -48,15 +46,15 @@ def build_external(c, mode="Release"):
             pgsum_path.write_text(content.replace("pragma omp barier", "pragma omp barrier"))
 
     # 2. GENERATE CMakeLists.txt dynamically
+    # FIX: We now strictly separate MSVC (LLVM OpenMP) from Standard (Classic OpenMP)
     cmake_content = """
 cmake_minimum_required(VERSION 3.10)
 project(original_mags LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
-find_package(OpenMP REQUIRED)
-
-add_executable(mags
+# Define source files
+set(SOURCES
     src/util.cpp
     src/graph.cpp
     src/gsum.cpp
@@ -64,19 +62,28 @@ add_executable(mags
     run/run_mags.cpp
 )
 
+add_executable(mags ${SOURCES})
 target_include_directories(mags PRIVATE src src/parallel_hashmap)
-target_link_libraries(mags PRIVATE OpenMP::OpenMP_CXX)
 
 if(MSVC)
-    target_compile_options(mags PRIVATE /W0)
+    # MSVC Case:
+    # We DO NOT use find_package(OpenMP) or link OpenMP::OpenMP_CXX here.
+    # Linking OpenMP::OpenMP_CXX forces the '/openmp' flag (Classic OpenMP 2.0),
+    # which breaks the modern 'declare reduction' directives.
+    # Instead, we pass /openmp:llvm directly, which automatically links libomp.lib.
+    target_compile_options(mags PRIVATE /W0 /openmp:llvm)
 else()
+    # Linux/macOS Case:
+    # Use standard CMake detection which works correctly for GCC/Clang.
+    find_package(OpenMP REQUIRED)
+    target_link_libraries(mags PRIVATE OpenMP::OpenMP_CXX)
     target_compile_options(mags PRIVATE -w)
 endif()
 """
     target_cmake = EXTERNAL_DIR / "CMakeLists.txt"
-    if not target_cmake.exists() or target_cmake.read_text().strip() != cmake_content.strip():
-        print("📝 Generating CMakeLists.txt for external repo...")
-        target_cmake.write_text(cmake_content)
+    # Always write to ensure the fix is applied
+    print("📝 Generating CMakeLists.txt for external repo...")
+    target_cmake.write_text(cmake_content)
 
     # 3. Define Flags for macOS
     extra_flags = ""
@@ -94,12 +101,10 @@ endif()
     print(f"⚙️  Configuring External MAGS ({mode})...")
     ext_build = EXTERNAL_DIR / "build"
 
-    # FIX: Use safe_path
     cmd_config = f'cmake -S {safe_path(EXTERNAL_DIR)} -B {safe_path(ext_build)} -DCMAKE_BUILD_TYPE={mode}{extra_flags}'
     c.run(cmd_config)
 
     print(f"🔨 Compiling External MAGS...")
-    # FIX: Use safe_path
     c.run(f'cmake --build {safe_path(ext_build)} -j')
 
     # 5. COPY Executable to main build folder
@@ -120,7 +125,6 @@ def benchmark(c, group="small"):
     """Run benchmark."""
     print(f"🚀 Running {group} benchmarks...")
 
-    # FIX: Use safe_path everywhere
     cli_path = safe_path(ROOT / "benchmarking" / "cli.py")
     python_exe = safe_path(sys.executable)
 
@@ -140,7 +144,7 @@ def plot(c):
 
 @task
 def data(c):
-    """Download SNAP datasets used in the MAGS paper. """
+    """Download SNAP datasets used in the MAGS paper."""
     datasets = {
         "small": [
             ("https://snap.stanford.edu/data/as-caida20071105.txt.gz", "as-caida20071105.txt"),
