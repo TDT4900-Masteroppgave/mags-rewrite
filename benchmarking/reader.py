@@ -4,17 +4,16 @@ from io import StringIO
 from typing import List, Dict
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 def get_cleaned_dataset_path(raw_filename: str) -> Path:
     """
     Reads a dataset, cleans it (Undirected, No self-loops, Unique),
     and returns the path to the cached clean file.
     """
-    # 1. Locate the Raw File
     potential_paths = [
-        PROJECT_ROOT / "data" / "mags_data" / "small_datasets" / raw_filename,
-        PROJECT_ROOT / "data" / "test_data" / raw_filename
+        PROJECT_ROOT / "data" / "small" / raw_filename,
+        PROJECT_ROOT / "data" / "large" / raw_filename
     ]
 
     raw_path = None
@@ -26,7 +25,6 @@ def get_cleaned_dataset_path(raw_filename: str) -> Path:
     if raw_path is None:
         raise FileNotFoundError(f"Could not find dataset '{raw_filename}' in known data directories.")
 
-    # 2. Check for Cached Clean File
     clean_dir = PROJECT_ROOT / "data" / "cleaned"
     clean_dir.mkdir(parents=True, exist_ok=True)
     clean_path = clean_dir / raw_filename
@@ -37,7 +35,6 @@ def get_cleaned_dataset_path(raw_filename: str) -> Path:
 
     print(f"Preprocessing dataset: {raw_filename} -> {clean_path}")
 
-    # 3. Clean and Write
     unique_edges = set()
     with open(raw_path, 'r') as f:
         for line in f:

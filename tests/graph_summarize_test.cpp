@@ -1,17 +1,11 @@
 #include "GraphTestUtility.h"
 #include "mags/greedy_merge.h"
-#include "mags/preprocess.h"
-
 #include <chrono>
-#include <iomanip>
-#include <iostream>
 
-#include <../include/mags/graph_summarize.h>
+#include <mags/graph_summarize.h>
 #include <gtest/gtest.h>
 
 class GraphSummarizeTest : public test::GraphTestUtility {};
-
-std::string email_data = "../../tests/data/email-Eu-core.txt";
 
 TEST_F(GraphSummarizeTest, ValidGraph) {
   write_tmp_file("0 1\n0 2\n2 1");
@@ -24,140 +18,84 @@ TEST_F(GraphSummarizeTest, ValidGraph) {
   EXPECT_TRUE(r.minus_corrections.empty());
 }
 
-#include "mags/util_file.h"   // For io::read_from_file
+TEST_F(GraphSummarizeTest, StarGraphCompression) {
+  // Center: 0, Leaves: 1-5
+  // Ideally, {1,2,3,4,5} become a SuperNode, connected to {0}.
+  write_tmp_file(
+      "0 1\n0 2\n0 3\n0 4\n0 5"
+  );
 
-TEST_F(GraphSummarizeTest, EmailEUCore) {
-  // Path adjustment for build directory
-  const std::string file_path = email_data;
+  // t=50, k=40 (Standard defaults)
+  const auto r = summarize_from_file(tmp_file_name, 50, 40);
 
-  // 1. Establish Ground Truth
-  Graph original;
-  try {
-      original = mags::io::read_from_file(file_path);
-  } catch (const std::exception& e) {
-      FAIL() << "Could not read file at " << file_path << ": " << e.what();
+  // Original Edges: 5
+  // Ideal Cost: 1 SuperEdge ({0}-{Leaves}) + 0 Corrections = 1
+  // Acceptable Cost: < 5
+  EXPECT_LT(r.get_total_cost(), 5);
+  EXPECT_LT(r.get_relative_size(), 1.0); // Must be compressed
+
+  // In a star graph, we expect 0 corrections if optimized perfectly
+  if (r.super_edges.size() > 0) {
+      EXPECT_TRUE(r.plus_corrections.empty());
+      EXPECT_TRUE(r.minus_corrections.empty());
   }
-
-  size_t original_edges = 0;
-  for (const auto& adj : original) {
-      original_edges += adj.size();
-  }
-  original_edges /= 2; // Undirected count
-
-  // 2. Run Algorithm
-  const auto r = summarize_from_file(file_path, 50, 40);
-
-  // 3. Output Comparisons
-  double ratio = (double)r.get_total_cost() / original_edges;
-
-  // Convert to "Arc Equivalents" (Directed) for comparison with original codebase
-  size_t original_arcs = original_edges * 2;
-  size_t summary_arcs = r.get_total_cost() * 2;
-  double ratio_arcs = (double)summary_arcs / original_arcs;
-
-  std::cout << "==============================================" << std::endl;
-  std::cout << "          COMPARISON REPORT                   " << std::endl;
-  std::cout << "==============================================" << std::endl;
-  std::cout << "[UNDIRECTED] (Your Implementation)" << std::endl;
-  std::cout << "  Original Edges : " << original_edges << std::endl;
-  std::cout << "  Summary Cost   : " << r.get_total_cost() << std::endl;
-  std::cout << "  Ratio          : " << std::fixed << std::setprecision(4) << ratio << std::endl;
-  std::cout << "----------------------------------------------" << std::endl;
-  std::cout << "[ARC EQUIVALENT] (For comparison with Original MAGS)" << std::endl;
-  std::cout << "  Original Arcs  : " << original_arcs << " (vs ~51,142)" << std::endl;
-  std::cout << "  Summary Arcs   : " << summary_arcs  << " (vs ~42,827)" << std::endl;
-  std::cout << "  Ratio          : " << ratio_arcs << " (vs 0.837)" << std::endl;
-  std::cout << "==============================================" << std::endl;
-
-  // Assertions
-  EXPECT_GT(r.get_total_cost(), 0);
-  EXPECT_LT(r.get_total_cost(), original_edges);
 }
 
-TEST_F(GraphSummarizeTest, EmailEUCore_DetailedRuntime) {
-  const std::string file_path = email_data;
+TEST_F(GraphSummarizeTest, CliqueWithMissingEdge) {
+  // Nodes 0,1,2,3 fully connected (K4) EXCEPT edge (0,1)
+  // Edges: (0,2), (0,3), (1,2), (1,3), (2,3)
+  write_tmp_file(
+      "0 2\n0 3\n"
+      "1 2\n1 3\n"
+      "2 3"
+  );
 
-  // --- BASELINE VALUES (From Original Implementation) ---
-  const double B_READ  = 0.013;
-  const double B_MERGE = 0.227;
-  const double B_ENC   = 0.001;
-  const double B_RATIO = 0.837413476;
+  const auto r = summarize_from_file(tmp_file_name, 50, 40);
 
-  // 1. Setup
-  try {
-      auto check = mags::io::read_from_file(file_path);
-      if (check.empty()) GTEST_FAIL() << "Data file empty.";
-  } catch (...) {
-      GTEST_SKIP() << "Data file not found.";
-  }
+  // Ideal: 1 SuperNode {0,1,2,3} with Self-Loop.
+  // Errors: (0,1) is missing, so 1 Minus Correction.
+  // Total Cost: 1 SE + 1 MC = 2.
+  // Original Edges: 5.
+  EXPECT_LT(r.get_total_cost(), 5);
+  EXPECT_NE(r.plus_corrections.size(), 5);
+}
 
-  using Clock = std::chrono::high_resolution_clock;
-  using Duration = std::chrono::duration<double>;
+TEST_F(GraphSummarizeTest, DisconnectedGraph) {
+  // Component A: 0-1
+  // Component B: 2-3
+  write_tmp_file("0 1\n2 3");
 
-  std::cout << "Mags Rewrite Benchmark vs Original (Baseline)" << std::endl;
-  std::cout << "File: " << file_path << " | T=50, K=40" << std::endl;
+  const auto r = summarize_from_file(tmp_file_name, 50, 40);
 
-  // --- 1. READ ---
-  auto t_start = Clock::now();
-  Graph input = mags::io::read_from_file(file_path);
-  Graph clean = mags::preprocess::clean_graph(input);
-  double s_read = Duration(Clock::now() - t_start).count();
+  // Total edges: 2.
+  // Summary should cost exactly 2 (either 2 SuperEdges or 2 Plus Corrections).
+  EXPECT_EQ(r.get_total_cost(), 2);
+}
 
-  size_t original_edges = 0;
-  for (const auto& adj : clean) original_edges += adj.size();
-  original_edges /= 2;
+TEST_F(GraphSummarizeTest, HandlesDuplicatesAndSelfLoops) {
+  // Edge 0-1 repeated 3 times
+  // Self-loop 1-1 (should be removed)
+  write_tmp_file(
+      "0 1\n"
+      "0 1\n"
+      "1 0\n" // Reversed duplicate
+      "1 1"   // Self loop
+  );
 
-  // --- 2. MERGE ---
-  auto t_merge_start = Clock::now();
-  auto candidates = mags::cg::generate_candidates(clean, 40);
-  auto supernodes = mags::gm::greedy_merge(clean, 50, candidates);
-  double s_merge = Duration(Clock::now() - t_merge_start).count();
+  const auto r = summarize_from_file(tmp_file_name, 50, 40);
 
-  // --- 3. ENCODE ---
-  auto t_enc_start = Clock::now();
-  auto r = mags::out::output(clean, supernodes);
-  double s_enc = Duration(Clock::now() - t_enc_start).count();
+  // Should result in exactly 1 valid edge (0-1)
+  EXPECT_EQ(r.get_total_cost(), 1);
+  // Original graph had effectively 1 edge, relative size should count based on cleaned or original?
+  // Usually relative size is based on Cleaned Graph size in MAGS.
+}
 
-  // --- CALCULATIONS ---
-  // Convert to arc equivalents for fair ratio comparison
-  size_t my_summary_arcs = r.get_total_cost() * 2;
-  size_t my_original_arcs = original_edges * 2;
-  double my_ratio = (double)my_summary_arcs / my_original_arcs;
+TEST_F(GraphSummarizeTest, EmptyFile) {
+  write_tmp_file("");
 
-  // --- OUTPUT TABLE ---
-  auto print_row = [](std::string metric, double my_val, double base_val, std::string unit) {
-      double slower_by = my_val / base_val;
-      std::cout << std::left << std::setw(15) << metric
-                << "| " << std::setw(10) << my_val << unit
-                << "| " << std::setw(10) << base_val << unit
-                << "| " << std::setw(10) << std::fixed << std::setprecision(2) << slower_by << "x"
-                << std::endl;
-  };
-
-  std::cout << "-------------------------------------------------------------" << std::endl;
-  std::cout << std::left << std::setw(15) << "METRIC"
-            << "| " << std::setw(11) << "REWRITE"
-            << "| " << std::setw(11) << "ORIGINAL"
-            << "| " << "SLOWER BY" << std::endl;
-  std::cout << "-------------------------------------------------------------" << std::endl;
-
-  print_row("Read Time", s_read, B_READ, "s");
-  print_row("Merge Time", s_merge, B_MERGE, "s");
-  print_row("Encode Time", s_enc, B_ENC, "s");
-
-  std::cout << "-------------------------------------------------------------" << std::endl;
-  std::cout << std::left << std::setw(15) << "COMPRESSION"
-            << "| " << std::setw(11) << "REWRITE"
-            << "| " << std::setw(11) << "ORIGINAL"
-            << "| " << "IMPROVEMENT" << std::endl;
-  std::cout << "-------------------------------------------------------------" << std::endl;
-
-  double improvement = (1.0 - (my_ratio / B_RATIO)) * 100.0;
-
-  std::cout << std::left << std::setw(15) << "Ratio"
-            << "| " << std::setw(10) << std::setprecision(4) << my_ratio << " "
-            << "| " << std::setw(10) << std::setprecision(4) << B_RATIO << " "
-            << "| " << (B_RATIO - my_ratio) << " (" << improvement << "% )" << std::endl;
-
-  std::cout << "-------------------------------------------------------------" << std::endl;
+  // Should not throw exception
+  EXPECT_NO_THROW({
+      const auto r = summarize_from_file(tmp_file_name, 50, 40);
+      EXPECT_EQ(r.get_total_cost(), 0);
+  });
 }
