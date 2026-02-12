@@ -46,7 +46,7 @@ def build_external(c, mode="Release"):
             pgsum_path.write_text(content.replace("pragma omp barier", "pragma omp barrier"))
 
     # 2. GENERATE CMakeLists.txt dynamically
-    # FIX: We now strictly separate MSVC (LLVM OpenMP) from Standard (Classic OpenMP)
+    # FIX: We now handle Clang-CL (Windows) correctly by checking CMAKE_CXX_COMPILER_ID
     cmake_content = """
 cmake_minimum_required(VERSION 3.10)
 project(original_mags LANGUAGES CXX)
@@ -65,28 +65,33 @@ set(SOURCES
 add_executable(mags ${SOURCES})
 target_include_directories(mags PRIVATE src src/parallel_hashmap)
 
-if(MSVC)
-    # MSVC Case:
-    # We DO NOT use find_package(OpenMP) or link OpenMP::OpenMP_CXX here.
-    # Linking OpenMP::OpenMP_CXX forces the '/openmp' flag (Classic OpenMP 2.0),
-    # which breaks the modern 'declare reduction' directives.
-    # Instead, we pass /openmp:llvm directly, which automatically links libomp.lib.
+# Check for MSVC (cl.exe) vs Clang-CL (acts like MSVC but is Clang)
+if(MSVC AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # Pure MSVC: Forcing /openmp:llvm is our best bet, but often fails on 'declare reduction'.
+    # (If you see errors here, switch to Clang-CL via '-T ClangCL')
     target_compile_options(mags PRIVATE /W0 /openmp:llvm)
 else()
-    # Linux/macOS Case:
-    # Use standard CMake detection which works correctly for GCC/Clang.
+    # This block handles: Linux (GCC/Clang), macOS (Clang), and Windows (Clang-CL)
     find_package(OpenMP REQUIRED)
     target_link_libraries(mags PRIVATE OpenMP::OpenMP_CXX)
-    target_compile_options(mags PRIVATE -w)
+    
+    if(MSVC) 
+        # This implies Clang-CL (Windows)
+        target_compile_options(mags PRIVATE /W0 -Wno-everything)
+    else()
+        # Standard GCC/Clang
+        target_compile_options(mags PRIVATE -w)
+    endif()
 endif()
 """
     target_cmake = EXTERNAL_DIR / "CMakeLists.txt"
-    # Always write to ensure the fix is applied
     print("📝 Generating CMakeLists.txt for external repo...")
     target_cmake.write_text(cmake_content)
 
-    # 3. Define Flags for macOS
+    # 3. Define Flags
     extra_flags = ""
+    generator_flags = "" # FIX: Add generator flag for Windows
+
     if platform.system() == "Darwin":
         omp_prefix = "/opt/homebrew/opt/libomp"
         if Path(omp_prefix).exists():
@@ -97,28 +102,43 @@ endif()
             )
         extra_flags += ' -DCMAKE_CXX_COMPILER=clang++'
 
+    elif platform.system() == "Windows":
+        # FIX: Force Visual Studio to use the Clang compiler (Clang-CL)
+        # This solves the "declare reduction" syntax errors.
+        generator_flags = " -T ClangCL"
+
     # 4. Build
     print(f"⚙️  Configuring External MAGS ({mode})...")
     ext_build = EXTERNAL_DIR / "build"
 
-    cmd_config = f'cmake -S {safe_path(EXTERNAL_DIR)} -B {safe_path(ext_build)} -DCMAKE_BUILD_TYPE={mode}{extra_flags}'
+    cmd_config = f'cmake -S {safe_path(EXTERNAL_DIR)} -B {safe_path(ext_build)} {generator_flags} -DCMAKE_BUILD_TYPE={mode}{extra_flags}'
     c.run(cmd_config)
 
     print(f"🔨 Compiling External MAGS...")
     c.run(f'cmake --build {safe_path(ext_build)} -j')
 
-    # 5. COPY Executable to main build folder
+    # 5. COPY Executable
     exe_name = "mags.exe" if platform.system() == "Windows" else "mags"
-    src_exe = ext_build / exe_name
-    dst_exe = ROOT / "build" / exe_name
+    src_exe = ext_build / mode / exe_name if platform.system() == "Windows" else ext_build / exe_name
 
+    # Note: On Windows with VS generator, binary is often in build/Release/mags.exe
+    if not src_exe.exists() and platform.system() == "Windows":
+        src_exe = ext_build / mode / exe_name
+
+    dst_exe = ROOT / "build" / exe_name
     dst_exe.parent.mkdir(parents=True, exist_ok=True)
 
     if src_exe.exists():
         shutil.copy(src_exe, dst_exe)
         print(f"✅ Copied original binary to {dst_exe}")
     else:
-        print(f"⚠️  Warning: Could not find compiled executable at {src_exe}")
+        # Fallback check for flat build directory
+        src_exe_flat = ext_build / exe_name
+        if src_exe_flat.exists():
+            shutil.copy(src_exe_flat, dst_exe)
+            print(f"✅ Copied original binary to {dst_exe}")
+        else:
+            print(f"⚠️  Warning: Could not find compiled executable at {src_exe}")
 
 @task
 def benchmark(c, group="small"):

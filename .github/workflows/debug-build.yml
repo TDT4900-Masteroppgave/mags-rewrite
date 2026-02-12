@@ -1,0 +1,27 @@
+name: Debug Build
+
+on:
+  push:
+    paths:
+      - 'scripts/tasks.py'
+      - '.github/workflows/debug-build.yml'
+  workflow_dispatch:
+
+jobs:
+  test-windows-build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install lightweight deps
+        run: pip install invoke
+
+      - name: Try to Build External
+        env:
+          PYTHONIOENCODING: "utf-8"
+        run: python -m invoke --search-root=scripts setup build-external
