@@ -46,6 +46,8 @@ jobs:
           choco install make
 
       - name: Run Benchmark
+        env:
+          PYTHONIOENCODING: "utf-8"
         run: make benchmark-${{ inputs.group }}
 
       - name: Generate Plots
