@@ -3,6 +3,8 @@ build/
 build-*/
 bin/
 lib/
+data/
+results/
 
 # CLion specific build folder (you already mentioned this, but add the wildcard)
 cmake-build-*/
@@ -35,3 +37,5 @@ __pycache__/
 *$py.class
 
 compile_commands.json
+
+external/
