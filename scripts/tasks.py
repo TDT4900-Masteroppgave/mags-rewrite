@@ -1,0 +1,192 @@
+import gzip
+import urllib.request
+import shlex
+import shutil
+import platform
+import sys
+from invoke import task
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+EXTERNAL_DIR = ROOT / "external" / "mags-release"
+
+@task
+def setup(c):
+    """Clone original repo and prepare directories."""
+    dirs = [ROOT / "data/small", ROOT / "data/large", ROOT / "results/plots"]
+    for d in dirs:
+        d.mkdir(parents=True, exist_ok=True)
+
+    if not EXTERNAL_DIR.exists():
+        print("⬇️ Cloning original MAGS...")
+        c.run(f"git clone https://github.com/nedchu/mags-release.git {shlex.quote(str(EXTERNAL_DIR))}")
+
+@task
+def build_external(c, mode="Release"):
+    """Patch and Build the original MAGS code with OpenMP support."""
+
+    # 1. Patch the typo
+    pgsum_path = EXTERNAL_DIR / "src" / "pgsum.cpp"
+    if pgsum_path.exists():
+        content = pgsum_path.read_text()
+        if "pragma omp barier" in content:
+            print("🩹 Patching 'barier' typo in original code...")
+            pgsum_path.write_text(content.replace("pragma omp barier", "pragma omp barrier"))
+
+    # 2. GENERATE CMakeLists.txt dynamically
+    cmake_content = """
+cmake_minimum_required(VERSION 3.10)
+project(original_mags LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+
+find_package(OpenMP REQUIRED)
+
+add_executable(mags
+    src/util.cpp
+    src/graph.cpp
+    src/gsum.cpp
+    src/pgsum.cpp
+    run/run_mags.cpp
+)
+
+target_include_directories(mags PRIVATE src src/parallel_hashmap)
+target_link_libraries(mags PRIVATE OpenMP::OpenMP_CXX)
+
+if(MSVC)
+    target_compile_options(mags PRIVATE /W0)
+else()
+    target_compile_options(mags PRIVATE -w)
+endif()
+"""
+    # Only write if it doesn't match to avoid constant rebuilds (optional optimization)
+    target_cmake = EXTERNAL_DIR / "CMakeLists.txt"
+    if not target_cmake.exists() or target_cmake.read_text().strip() != cmake_content.strip():
+        print("📝 Generating CMakeLists.txt for external repo...")
+        target_cmake.write_text(cmake_content)
+
+    # 3. Define Flags for macOS
+    extra_flags = ""
+    if platform.system() == "Darwin":
+        omp_prefix = "/opt/homebrew/opt/libomp"
+        if Path(omp_prefix).exists():
+            extra_flags = (
+                f' -DOpenMP_CXX_FLAGS="-Xpreprocessor -fopenmp -I{omp_prefix}/include"'
+                f' -DOpenMP_CXX_LIB_NAMES="omp"'
+                f' -DOpenMP_omp_LIBRARY="{omp_prefix}/lib/libomp.dylib"'
+            )
+        extra_flags += ' -DCMAKE_CXX_COMPILER=clang++'
+
+    # 4. Build
+    print(f"⚙️  Configuring External MAGS ({mode})...")
+    ext_build = EXTERNAL_DIR / "build"
+
+    # Use shlex.quote to handle spaces in paths
+    cmd_config = f'cmake -S {shlex.quote(str(EXTERNAL_DIR))} -B {shlex.quote(str(ext_build))} -DCMAKE_BUILD_TYPE={mode}{extra_flags}'
+    c.run(cmd_config)
+
+    print(f"🔨 Compiling External MAGS...")
+    c.run(f'cmake --build {shlex.quote(str(ext_build))} -j')
+
+    # 5. COPY Executable to main build folder (THE FIX)
+    exe_name = "mags.exe" if platform.system() == "Windows" else "mags"
+    src_exe = ext_build / exe_name
+    dst_exe = ROOT / "build" / exe_name
+
+    # Ensure the main build directory exists
+    dst_exe.parent.mkdir(parents=True, exist_ok=True)
+
+    if src_exe.exists():
+        shutil.copy(src_exe, dst_exe)
+        print(f"✅ Copied original binary to {dst_exe}")
+    else:
+        print(f"⚠️  Warning: Could not find compiled executable at {src_exe}")
+
+@task
+def benchmark(c, group="small"):
+    """Run benchmark."""
+    print(f"🚀 Running {group} benchmarks...")
+    cli_path = shlex.quote(str(ROOT / "benchmarking" / "cli.py"))
+    python_exe = shlex.quote(sys.executable)
+
+    # Run the collection script
+    c.run(f"{python_exe} {cli_path} collect --group {group} --out results/data.json",
+          pty=(platform.system() != "Windows"))
+
+@task
+def plot(c):
+    """Generate plots."""
+    cli_path = shlex.quote(str(ROOT / "benchmarking" / "cli.py"))
+    python_exe = shlex.quote(sys.executable)
+    use_pty = platform.system() != "Windows"
+
+    c.run(f"{python_exe} {cli_path} plot --input results/data.json --y relative_size --out results/plots/relative_size.png", pty=use_pty)
+    c.run(f"{python_exe} {cli_path} plot --input results/data.json --y encoding --out results/plots/encoding_time.png", pty=use_pty)
+
+@task
+def data(c):
+    """Download SNAP datasets used in the MAGS paper. """
+    datasets = {
+        "small": [
+            ("https://snap.stanford.edu/data/as-caida20071105.txt.gz", "as-caida20071105.txt"),
+            ("https://snap.stanford.edu/data/email-Enron.txt.gz", "Email-Enron.txt"),
+            ("https://snap.stanford.edu/data/loc-brightkite_edges.txt.gz", "Brightkite_edges.txt"),
+            ("https://snap.stanford.edu/data/email-EuAll.txt.gz", "Email-EuAll.txt"),
+            ("https://snap.stanford.edu/data/soc-Slashdot0902.txt.gz", "Slashdot0902.txt"),
+            ("https://snap.stanford.edu/data/bigdata/communities/com-dblp.ungraph.txt.gz", "com-dblp.ungraph.txt")
+        ],
+        "large": [
+            ("https://snap.stanford.edu/data/amazon0601.txt.gz", "amazon0601.txt"),
+            ("https://snap.stanford.edu/data/bigdata/communities/com-youtube.ungraph.txt.gz", "com-youtube.ungraph.txt"),
+            ("https://snap.stanford.edu/data/as-skitter.txt.gz", "as-skitter.txt"),
+            ("https://snap.stanford.edu/data/com-lj.ungraph.txt.gz", "com-lj.ungraph.txt")
+        ]
+    }
+
+    for category, files in datasets.items():
+        target_dir = ROOT / "data" / category
+        target_dir.mkdir(parents=True, exist_ok=True)
+
+        for url, output_name in files:
+            dest_path = target_dir / output_name
+            if dest_path.exists():
+                print(f"[SKIP] {output_name} already exists.")
+                continue
+
+            print(f"[DOWNLOADING] {output_name} from SNAP...")
+            try:
+                with urllib.request.urlopen(url) as response:
+                    with gzip.GzipFile(fileobj=response) as uncompressed:
+                        with open(dest_path, 'wb') as out_file:
+                            shutil.copyfileobj(uncompressed, out_file)
+                print(f"[SUCCESS] Saved to {dest_path}")
+            except Exception as e:
+                print(f"[ERROR] Failed to download {output_name}: {e}")
+                if dest_path.exists():
+                    dest_path.unlink()
+
+@task
+def clean(c):
+    """Clean up build artifacts and temporary files."""
+    print("🧹 Cleaning up project...")
+
+    # List of patterns/directories to remove
+    targets = [
+        ROOT / "build",
+        ROOT / "external",
+        ROOT / "results",
+        ROOT / "data"
+    ]
+
+    for path in targets:
+        if path.exists():
+            if path.is_dir():
+                shutil.rmtree(path)
+                print(f"   - Removed directory: {path.name}")
+            else:
+                path.unlink()
+                print(f"   - Removed file: {path.name}")
+        else:
+            print(f"   - Skipped (not found): {path.name}")
+
+    print("✨ Clean complete.")

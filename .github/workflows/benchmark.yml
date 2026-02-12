@@ -1,0 +1,60 @@
+name: Benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      group:
+        description: 'Benchmark Group (small/large)'
+        required: true
+        default: 'small'
+        type: choice
+        options:
+          - small
+          - large
+
+jobs:
+  benchmark:
+    name: Benchmark on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Cache Data
+        uses: actions/cache@v4
+        with:
+          path: data
+          key: ${{ runner.os }}-snap-data-v1
+
+      - name: Install Make (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          choco install make
+
+      - name: Run Benchmark
+        run: make benchmark-${{ inputs.group }}
+
+      - name: Generate Plots
+        run: make plot
+
+      - name: Upload Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ matrix.os }}
+          path: |
+            results/

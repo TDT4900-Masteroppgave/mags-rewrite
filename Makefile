@@ -1,106 +1,74 @@
-BUILD_DIR        = build
-EXEC_NAME        = mags_rewrite
-BENCH_SCRIPT     = benchmarking/cli.py
-DATA_SCRIPT      = scripts/download_benchmark_data.sh
+BUILD_DIR     = build
+VENV          = .venv
 
-RESULTS_DIR = results
-PLOTS_DIR = $(RESULTS_DIR)/plots
+# We detect Windows (OS is usually 'Windows_NT') vs Linux/macOS
+ifdef OS
+   # Windows Paths
+   PYTHON_CMD    = python
+   VENV_BIN      = $(VENV)/Scripts
+   VENV_PYTHON   = $(VENV_BIN)/python
+   VENV_ACTIVATE = $(VENV_BIN)/activate
+else
+   # Linux/macOS Paths
+   PYTHON_CMD    = python3
+   VENV_BIN      = $(VENV)/bin
+   VENV_PYTHON   = $(VENV_BIN)/python3
+   VENV_ACTIVATE = $(VENV_BIN)/activate
+endif
 
-.PHONY: all release debug clean test help format data benchmark benchmark-small benchmark-large plot
+VENV_INVOKE   = $(VENV_PYTHON) -m invoke --search-root=scripts -c tasks
 
-all: clean release
+.PHONY: all setup release debug test clean data benchmark-small benchmark-large plot external
 
-directories:
-	@mkdir -p $(RESULTS_DIR) $(PLOTS_DIR)
+all: release external
+
+# --- BUILD RULES ---
 
 release:
 	@echo "➡️  Configuring Release build..."
 	@cmake -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=Release
 	@echo "➡️  Compiling Release build..."
 	@cmake --build $(BUILD_DIR) -j
-	@echo "✅  Success! Executable: ./$(BUILD_DIR)/apps/$(EXEC_NAME)"
+	@echo "✅  Success! Executable built in $(BUILD_DIR)"
 
 debug:
 	@echo "➡️  Configuring Debug build..."
 	@cmake -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=Debug
 	@echo "➡️  Compiling Debug build..."
 	@cmake --build $(BUILD_DIR) -j
-	@echo "✅  Success! Executable: ./$(BUILD_DIR)/apps/$(EXEC_NAME)"
+	@echo "✅  Success! Executable built in $(BUILD_DIR)"
 
-test: clean debug
+test: debug
 	@echo "➡️  Running Tests..."
 	@cd $(BUILD_DIR) && ctest --output-on-failure
 
-clean:
-	@echo "🧹 Cleaning all build artifacts..."
-	@rm -rf build
-	@echo "✅  Done."
+# --- PYTHON TASKS ---
 
-help:
-	@echo "Usage:"
-	@echo "  make          Build Release mode (Default)"
-	@echo "  make release  Configure and build Release mode"
-	@echo "  make debug    Configure and build Debug mode"
-	@echo "  make test     Build Debug mode and run tests"
-	@echo "  make clean    Remove the 'build' directory"
+$(VENV_ACTIVATE): requirements.txt
+	@echo "🔧 Setting up Python Environment..."
+	@$(PYTHON_CMD) -m venv $(VENV)
+	@$(VENV_PYTHON) -m pip install --upgrade pip
+	@$(VENV_PYTHON) -m pip install -r requirements.txt
+	@$(VENV_PYTHON) -c "import os; from pathlib import Path; Path('$(VENV_ACTIVATE)').touch()"
 
-# ==========================================
-# External Dependencies (Original MAGS)
-# ==========================================
-ORIGINAL_REPO_URL = https://github.com/nedchu/mags-release.git
-ORIGINAL_DIR      = external/mags-release
-ORIGINAL_EXEC     = $(ORIGINAL_DIR)/build/mags
+setup: | $(VENV_ACTIVATE)
+	@$(VENV_INVOKE) setup
 
-# Setup & Build Original MAGS
-$(ORIGINAL_EXEC):
-	@echo "⬇️ Cloning Original MAGS..."
-	@mkdir -p external
-	@[ -d "$(ORIGINAL_DIR)" ] || git clone $(ORIGINAL_REPO_URL) $(ORIGINAL_DIR)
+external: setup
+	@echo "➡️  Building Original MAGS..."
+	@$(VENV_INVOKE) build-external
 
-	@echo "🔧Patching Original Code"
-	@# Fixes error: expected an OpenMP directive #pragma omp barier
-	@perl -pi -e 's/pragma omp barier/pragma omp barrier/g' $(ORIGINAL_DIR)/src/pgsum.cpp
+data: | $(VENV_ACTIVATE)
+	@$(VENV_INVOKE) data
 
-	@echo "🏗️ Building Original MAGS"
-	@mkdir -p $(ORIGINAL_DIR)/build
-	@# Added -w to suppress the flood of 'deprecated' warnings from parallel_hashmap
-	@clang++ -O3 -std=c++17 -w \
-		-Xpreprocessor -fopenmp \
-		-I/opt/homebrew/opt/libomp/include \
-		-L/opt/homebrew/opt/libomp/lib -lomp \
-		-I$(ORIGINAL_DIR)/src \
-		-I$(ORIGINAL_DIR)/src/parallel_hashmap \
-		$(ORIGINAL_DIR)/src/*.cpp \
-		$(ORIGINAL_DIR)/run/run_mags.cpp \
-		-o $(ORIGINAL_DIR)/build/mags
+benchmark-small: release external data
+	@$(VENV_INVOKE) benchmark --group small
 
-	@echo "✅ Original MAGS Built Successfully"
+benchmark-large: release external data
+	@$(VENV_INVOKE) benchmark --group large
 
-# Copy Original Executable to ./build/mags
-build/mags: $(ORIGINAL_EXEC)
-	@mkdir -p build
-	@cp $(ORIGINAL_EXEC) build/mags
-	@echo "✅ Original MAGS installed to ./build/mags"
+plot: | $(VENV_ACTIVATE)
+	@$(VENV_INVOKE) plot
 
-build-original: build/mags
-
-benchmark-small: release build/mags data directories
-	@echo "🚀 Running Small Graph Benchmarks (CA-DB)..."
-	@python3 benchmarking/cli.py collect --group small --out results/data.json
-	@echo "✅ Results saved to results/data.json"
-
-benchmark-large: release build/mags data directories
-	@echo "🚀 Running Large Graph Benchmarks (AM, YT, SK, LJ)..."
-	@python3 benchmarking/cli.py collect --group large --out results/data.json
-	@echo "✅ Results saved to results/data.json"
-
-plot: directories
-	@echo "📊 Plotting Results..."
-	@python3 benchmarking/cli.py plot --input results/data.json --y relative_size --out results/plots/relative_size.png --title "Relative Size Comparison"
-	@python3 benchmarking/cli.py plot --input results/data.json --y encoding --out results/plots/encoding_time.png --title "Encoding Time Comparison"
-	@echo "✅ Plots saved to results/plots/"
-
-data:
-	@echo "📥 Checking for test datasets..."
-	@chmod +x $(DATA_SCRIPT)
-	@./$(DATA_SCRIPT)
+clean: | $(VENV_ACTIVATE)
+	@$(VENV_INVOKE) clean
